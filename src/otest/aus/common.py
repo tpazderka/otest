@@ -14,7 +14,6 @@ import aatest
 from aatest.summation import assert_summation
 from aatest.verify import Verify
 
-from oidctest.prof_util import map_prof
 
 __author__ = 'roland'
 
@@ -74,26 +73,6 @@ def main_setup(log):
             "cinfo": CONF.INFO, "orddesc": FLOWS.ORDDESC,
             "profiles": profiles, "operations": oper,
             "profile": cargs.profile}
-
-
-def make_list(flows, profile, **kw_args):
-    f_names = list(flows.keys())
-    f_names.sort()
-    flow_names = []
-    for k in kw_args["order"]:
-        k += '-'
-        l = [z for z in f_names if z.startswith(k)]
-        flow_names.extend(l)
-
-    res = []
-    sprofile = profile.split(".")
-    for tid in flow_names:
-        _flow = flows[tid]
-
-        if map_prof(sprofile, _flow["profile"].split(".")):
-            res.append(tid)
-
-    return res
 
 
 def node_dict(flows, lst):

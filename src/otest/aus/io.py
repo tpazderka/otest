@@ -21,7 +21,7 @@ from aatest.summation import represent_result
 from aatest.summation import store_test_state
 from aatest.utils import get_test_info
 
-from otest.utils import get_profile_info
+from otest.aus.utils import get_profile_info
 
 __author__ = 'roland'
 

@@ -1,7 +1,8 @@
 import json
 import logging
-import importlib
-import sys
+import csv
+import pkg_resources
+
 from aatest.events import Events
 from oic.extension.token import JWTToken
 
@@ -12,11 +13,7 @@ from oic.utils.keyio import keyjar_init
 from oic.utils.sdb import SessionDB
 from oic.utils.userinfo import UserInfo
 
-from oidctest.provider import Provider
-from oidctest.endpoints import add_endpoints
-from oidctest.endpoints import ENDPOINTS
-import csv
-import pkg_resources
+from otest.rp.provider import Provider
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,9 +128,9 @@ def main_setup(args, lookup, config):
     if args.debug:
         op_arg["debug"] = True
 
-    # All endpoints the OpenID Connect Provider should answer on
-    add_endpoints(ENDPOINTS)
-    op_arg["endpoints"] = ENDPOINTS
+    # # All endpoints the OpenID Connect Provider should answer on
+    # add_endpoints(ENDPOINTS)
+    # op_arg["endpoints"] = ENDPOINTS
 
     if args.port == 80:
         _baseurl = config.baseurl

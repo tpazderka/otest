@@ -18,11 +18,9 @@ from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
 from oic.utils.http_util import get_post
 
-from oauth2test import CRYPTSUPPORT
-from oauth2test import Trace
-
-from oauth2test.client import make_client
-from oauth2test.conversation import Conversation
+from otest import CRYPTSUPPORT
+from otest import Trace
+from otest.conversation import Conversation
 
 __author__ = 'roland'
 
@@ -104,7 +102,7 @@ class WebTester(Tester):
         redirs = get_redirect_uris(cinfo)
 
         _flow = self.flows[test_id]
-        _cli = make_client(**kw_args)
+        _cli = self.make_entity(**kw_args)
         self.conv = Conversation(_flow, _cli, kw_args["msg_factory"],
                                  trace_cls=Trace, callback_uris=redirs)
         #_cli.conv = self.conv
@@ -218,7 +216,7 @@ class WebTester(Tester):
         index += 1
 
         try:
-            return self.run_flow(path, ENV["conf"], index)
+            return self.run_flow(path, conf=ENV["conf"], index=index)
         except Exception as err:
             exception_trace("", err, logger)
             self.inut.print_info(path)

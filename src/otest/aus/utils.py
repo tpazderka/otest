@@ -1,9 +1,4 @@
-import pkgutil
-
-from aatest import check as aa_check
-
 from oic.utils.time_util import in_a_while
-from otest import check as ocheck
 
 __author__ = 'roland'
 
@@ -51,14 +46,14 @@ def get_profile_info(session, test_id=None):
     return {}
 
 
-def get_check(check_id):
-    package = ocheck
-    prefix = package.__name__ + "."
-    for importer, modname, ispkg in pkgutil.iter_modules(package.__path__,
-                                                         prefix):
-        module = __import__(modname, fromlist="dummy")
-        chk = module.factory(check_id)
-        if chk:
-            return chk
-
-    return aa_check.factory(check_id)
+# def get_check(check_id):
+#     package = ocheck
+#     prefix = package.__name__ + "."
+#     for importer, modname, ispkg in pkgutil.iter_modules(package.__path__,
+#                                                          prefix):
+#         module = __import__(modname, fromlist="dummy")
+#         chk = module.factory(check_id)
+#         if chk:
+#             return chk
+#
+#     return aa_check.factory(check_id)

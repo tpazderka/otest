@@ -1,6 +1,9 @@
+import inspect
 import logging
 import requests
 import copy
+import sys
+
 from bs4 import BeautifulSoup
 from urllib.parse import parse_qs
 from requests.models import Response
@@ -13,10 +16,11 @@ from oic.oauth2.util import URL_ENCODED
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import get_post
 
-from aatest import Break
+from aatest import Break, Unknown
+from aatest import operation
 from aatest.operation import Operation
 from aatest.log import Log
-from aatest.events import EV_HTTP_RESPONSE
+from aatest.events import EV_HTTP_RESPONSE, EV_PROTOCOL_RESPONSE
 from aatest.events import EV_URL
 from aatest.events import EV_REPLY
 from aatest.events import EV_RESPONSE
@@ -46,6 +50,10 @@ class Request(Operation):
         else:
             self.conv.trace.error("Expected error, didn't get it")
             raise Break("Did not receive expected error")
+
+    def map_profile(self, profile_map):
+        for func, arg in profile_map[self.__class__][self.profile].items():
+            func(self, arg)
 
 
 class SyncRequest(Request):
@@ -283,7 +291,7 @@ class AsyncRequest(Request):
         logger.info("Parsed response: %s" % response.to_dict())
 
         _conv.trace.response(response)
-        _conv.events.store(EV_RESPONSE, response, ref=ev_index)
+        _conv.events.store(EV_PROTOCOL_RESPONSE, response, ref=ev_index)
 
         if self.expect_error:
             self.expected_error_response(response)
@@ -318,3 +326,15 @@ class SyncPutRequest(SyncRequest):
 
 class SyncDeleteRequest(SyncRequest):
     method = "DELETE"
+
+
+def factory(name):
+    for fname, obj in inspect.getmembers(sys.modules[__name__]):
+        if inspect.isclass(obj):
+            if name == fname:
+                return obj
+
+    obj = operation.factory(name)
+    if not obj:
+        raise Unknown("Couldn't find the operation: '{}'".format(name))
+    return obj

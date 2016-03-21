@@ -11,17 +11,16 @@ from future.backports.urllib.parse import urlparse
 
 from jwkest.jwk import RSAKey
 
+from oic.utils.keyio import KeyBundle
+from oic.utils.keyio import ec_init
+from oic.utils.keyio import dump_jwks
+
 from aatest import RequirementsNotMet
 from aatest import Unknown
 from aatest import operation
 from aatest.operation import request_with_client_http_session
 
-from otest.request import SyncGetRequest
-from otest.request import SyncPostRequest
-
-from oic.utils.keyio import KeyBundle
-from oic.utils.keyio import ec_init
-from oic.utils.keyio import dump_jwks
+from otest.aus.request import SyncGetRequest
 
 __author__ = 'roland'
 
@@ -214,11 +213,6 @@ class RotateEncKeys(RotateKeys):
         self.new_key = {"type": "RSA", "key": "../keys/second_enc.key",
                         "use": ["enc"]}
         self.kid_template = "enc%d"
-
-
-class RefreshAccessToken(SyncPostRequest):
-    request_cls = "RefreshAccessTokenRequest"
-    response_cls = "AccessTokenResponse"
 
 
 class Cache(Operation):

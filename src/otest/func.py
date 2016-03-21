@@ -12,7 +12,7 @@ from aatest.events import EV_RESPONSE
 from aatest.tool import get_redirect_uris
 from aatest.check import ERROR
 
-from oic.extension.client import make_software_statement
+from oic.extension.message import make_software_statement
 from oic.utils.keyio import KeyBundle
 from otest.check import get_id_tokens
 

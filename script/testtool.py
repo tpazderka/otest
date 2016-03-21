@@ -4,7 +4,6 @@ import logging
 import re
 import sys
 import requests
-import time
 import traceback
 
 from future.backports.urllib.parse import parse_qs
@@ -13,32 +12,27 @@ from future.backports.urllib.parse import urlparse
 
 from mako.lookup import TemplateLookup
 
-from aatest.check import State, WARNING
-from aatest.check import ERROR
-from aatest.conversation import Conversation
-from aatest.events import EV_REQUEST
-from aatest.events import EV_CONDITION
-from aatest.events import EV_HTTP_RESPONSE
+from aatest.check import WARNING
 from aatest.events import EV_PROTOCOL_REQUEST
 from aatest.events import NoSuchEvent
 from aatest.summation import eval_state
 from aatest.summation import get_errors
 from aatest.verify import Verify
 
-from oic import rndstr
 from oic.oauth2 import ErrorResponse
 
 from oic.utils.http_util import NotFound
 from oic.utils.http_util import SeeOther
-from oic.utils.http_util import extract_from_request
 from oic.utils.http_util import ServiceError
 from oic.utils.http_util import Response
 from oic.utils.http_util import BadRequest
-from oic.utils.webfinger import OIC_ISSUER
-from oic.utils.webfinger import WebFinger
 
 from requests.packages import urllib3
-from otest.display import display
+
+from otest.rp.display import display
+from otest.rp.endpoints import static
+from otest.rp.endpoints import add_endpoints
+from otest.rp.instance import Instances
 
 urllib3.disable_warnings()
 
@@ -61,55 +55,6 @@ LOOKUP = TemplateLookup(directories=[ROOT + 'htdocs'],
                         input_encoding='utf-8', output_encoding='utf-8')
 
 
-class Instances(object):
-    def __init__(self, as_args, baseurl, profiles, provider_cls, **kwargs):
-        self._db = {}
-        self.as_args = as_args
-        self.base_url = baseurl
-        self.profile = profiles
-        self.provider_cls = provider_cls
-
-        self.profiles = ['default']
-        self.profiles.extend(list(profiles.keys()))
-        self.profiles.append('custom')
-        self.data = kwargs
-
-    def remove_old(self):
-        now = time.time()
-
-        for key, val in self._db.items():
-            if now - val['ts'] > 43200:
-                del self._db[key]
-
-    def new_map(self, sid=''):
-        if not sid:
-            sid = rndstr(16)
-
-        op = self.provider_cls(**self.as_args)
-
-        op.baseurl = '{}{}'.format(self.base_url, sid)
-        op.name = op.baseurl
-
-        _conv = Conversation(None, op, None)
-        _conv.events = as_args['event_db']
-        _conv.data = self.data
-        op.trace = _conv.trace
-
-        self._db[sid] = {
-            'op': op,
-            'conv': _conv,
-            'ts': time.time(),
-            'selected': {}
-        }
-
-        return sid
-
-    def __getitem__(self, item):
-        return self._db[item]
-
-    def __setitem__(self, key, value):
-        self._db[key] = value
-
 
 def run_assertions(op_env, testspecs, conversation):
     try:
@@ -120,156 +65,6 @@ def run_assertions(op_env, testspecs, conversation):
         _ver = Verify(None, conversation)
         _ver.test_sequence(
             testspecs[op_env['test_id']][req.__class__.__name__]["assert"])
-
-
-def store_response(response, events):
-    events.store(EV_HTTP_RESPONSE, response.info())
-
-
-def wsgi_wrapper(environ, func, events, **kwargs):
-    kwargs = extract_from_request(environ, kwargs)
-    if kwargs['request']:
-        events.store(EV_REQUEST, kwargs['request'])
-    args = func(**kwargs)
-
-    try:
-        resp, state = args
-        store_response(resp, events)
-        return resp
-    except TypeError:
-        resp = args
-        store_response(resp, events)
-        return resp
-    except Exception as err:
-        logger.error("%s" % err)
-        raise
-
-
-# noinspection PyUnresolvedReferences
-def static(path):
-    logger.info("[static]sending: %s" % (path,))
-
-    try:
-        resp = Response(open(path).read())
-        if path.endswith(".ico"):
-            resp.add_header(('Content-Type', "image/x-icon"))
-        elif path.endswith(".html"):
-            resp.add_header(('Content-Type', 'text/html'))
-        elif path.endswith(".json"):
-            resp.add_header(('Content-Type', 'application/json'))
-        elif path.endswith(".txt"):
-            resp.add_header(('Content-Type', 'text/plain'))
-        elif path.endswith(".css"):
-            resp.add_header(('Content-Type', 'text/css'))
-        else:
-            resp.add_header(('Content-Type', "text/xml"))
-        return resp
-    except IOError:
-        return NotFound(path)
-
-
-def css(environ, events):
-    try:
-        info = open(environ["PATH_INFO"]).read()
-        resp = Response(info)
-    except (OSError, IOError):
-        resp = NotFound(environ["PATH_INFO"])
-
-    return resp
-
-
-def token(environ, events):
-    _op = environ["oic.op"]
-
-    return wsgi_wrapper(environ, _op.token_endpoint, events)
-
-
-def authorization(environ, events):
-    _op = environ["oic.op"]
-
-    return wsgi_wrapper(environ, _op.authorization_endpoint,
-                        events)
-
-
-def userinfo(environ, events):
-    _op = environ["oic.op"]
-
-    return wsgi_wrapper(environ, _op.userinfo_endpoint,
-                        events)
-
-
-def clientinfo(environ, events):
-    _op = environ["oic.op"]
-
-    return wsgi_wrapper(environ, _op.client_info_endpoint,
-                        events)
-
-
-def revocation(environ, events):
-    _op = environ["oic.op"]
-
-    return wsgi_wrapper(environ, _op.revocation_endpoint,
-                        events)
-
-
-def introspection(environ, events):
-    _op = environ["oic.op"]
-
-    return wsgi_wrapper(environ, _op.introspection_endpoint, events)
-
-
-# noinspection PyUnusedLocal
-def op_info(environ, events):
-    _op = environ["oic.op"]
-    logger.info("op_info")
-    return wsgi_wrapper(environ, _op.providerinfo_endpoint,
-                        events)
-
-
-# noinspection PyUnusedLocal
-def registration(environ, events):
-    _op = environ["oic.op"]
-
-    if environ["REQUEST_METHOD"] == "POST":
-        return wsgi_wrapper(environ, _op.registration_endpoint,
-                            events)
-    elif environ["REQUEST_METHOD"] == "GET":
-        return wsgi_wrapper(environ, _op.read_registration,
-                            events)
-    else:
-        return ServiceError("Method not supported")
-
-
-def webfinger(environ, events):
-    query = parse_qs(environ["QUERY_STRING"])
-    _op = environ["oic.op"]
-
-    try:
-        if query["rel"] != [OIC_ISSUER]:
-            events.store(
-                EV_CONDITION,
-                State('webfinger_parameters', ERROR,
-                      message='parameter rel wrong value: {}'.format(
-                          query['rel'])))
-            return BadRequest('Parameter value error')
-        else:
-            resource = query["resource"][0]
-    except KeyError as err:
-        events.store(EV_CONDITION,
-                       State('webfinger_parameters', ERROR,
-                             message='parameter {} missing'.format(err)))
-        resp = BadRequest("Missing parameter in request")
-    else:
-        wf = WebFinger()
-        resp = Response(wf.response(subject=resource, base=_op.baseurl))
-    return resp
-
-
-def add_endpoints(extra, URLS):
-    for endp in extra:
-        URLS.append(("^%s" % endp.etype, endp.func))
-
-    return URLS
 
 
 def construct_url(op, params, start_page):
