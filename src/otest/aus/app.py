@@ -107,10 +107,9 @@ class WebApplication(object):
         elif path == 'display':
             return inut.flow_list()
         elif path == "opresult":
-            if tester.conv is None:
-                return inut.sorry_response("", "No result to report")
-
-            return inut.opresult(tester.conv)
+            resp = SeeOther(
+                "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
+            return resp(environ, start_response)
         # expected path format: /<testid>[/<endpoint>]
         elif path in sh["flow_names"]:
             resp = tester.run(path, **self.webenv)
