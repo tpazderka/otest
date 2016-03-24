@@ -96,7 +96,14 @@ class WebApplication(object):
             except KeyError:
                 return inut.not_found()
         elif path == "continue":
-            return tester.cont(environ, self.webenv)
+            resp = tester.cont(environ, self.webenv)
+            session['session_info'] = inut.session
+            if resp:
+                return resp
+            else:
+                resp = SeeOther(
+                    "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
+                return resp(environ, start_response)
         elif path == 'display':
             return inut.flow_list()
         elif path == "opresult":
@@ -156,7 +163,11 @@ class WebApplication(object):
                     return resp
                 else:
                     try:
-                        return inut.flow_list()
+                        #return inut.flow_list()
+                        resp = SeeOther(
+                            "/display#{}".format(
+                                self.pick_grp(sh['conv'].test_id)))
+                        return resp(environ, start_response)
                     except Exception as err:
                         logger.error(err)
                         raise
