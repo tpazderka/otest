@@ -5,7 +5,7 @@ from aatest.check import OK
 from aatest.check import WARNING
 from aatest.check import ERROR
 from aatest.check import CRITICAL
-from aatest.events import EV_CONDITION
+from aatest.events import EV_CONDITION, EV_HTTP_INFO
 from aatest.events import EV_HTTP_RESPONSE
 from aatest.events import EV_PROTOCOL_RESPONSE
 from aatest.events import EV_FAULT
@@ -63,7 +63,7 @@ def do_protocol_response(event):
     return res
 
 
-def do_http_response(event):
+def do_http_info(event):
     d = event.data
     res = ['<h4>Response</h4>',
            '<table border="1" style="width:100%">',
@@ -79,6 +79,27 @@ def do_http_response(event):
         res.extend(print_message(json.loads(d['message'])))
     except JSONDecodeError:
         res.extend(adjust_lines(d['message']))
+    res.append('</pre></td></tr>')
+    res.extend(['</table>'])
+    return res
+
+
+def do_http_response(event):
+    d = event.data
+    res = ['<h4>Response</h4>',
+           '<table border="1" style="width:100%">',
+           '<tr><td>status</td><td>{}</td></tr>'.format(d.status_code),
+           '<tr><td>headers</td><td><pre>[']
+
+    for x in d.headers:
+        res.extend(adjust_lines('{}'.format(x)))
+
+    res.append(']</pre></td></tr>')
+    res.append('<tr><td>message</td><td><pre>')
+    try:
+        res.extend(print_message(json.loads(d.text)))
+    except JSONDecodeError:
+        res.extend(adjust_lines(d.text))
     res.append('</pre></td></tr>')
     res.extend(['</table>'])
     return res
@@ -160,6 +181,7 @@ FUNC_MAP = {
     EV_FAULT: do_fault,
     EV_HANDLER_RESPONSE: do_handler_response,
     EV_HTTP_ARGS: do_http_args,
+    EV_HTTP_INFO: do_http_info,
     EV_HTTP_RESPONSE: do_http_response,
     EV_HTTP_RESPONSE_HEADER: do_http_response_header,
     EV_OPERATION: do_operation,

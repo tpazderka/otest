@@ -2,7 +2,7 @@ import logging
 from aatest.check import State
 from aatest.check import ERROR
 from aatest.events import EV_CONDITION
-from aatest.events import EV_HTTP_RESPONSE
+from aatest.events import EV_HTTP_INFO
 from aatest.events import EV_REQUEST
 
 from future.backports.urllib.parse import parse_qs
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def store_response(response, events):
-    events.store(EV_HTTP_RESPONSE, response.info())
+    events.store(EV_HTTP_INFO, response.info())
 
 
 def wsgi_wrapper(environ, func, events, **kwargs):
