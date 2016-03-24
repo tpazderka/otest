@@ -73,8 +73,7 @@ class CheckHTTPResponse(CriticalError):
     msg = "OP error"
 
     def _func(self, conv):
-        _response = conv.last_response
-        _content = conv.last_content
+        _response = conv.events.get_data(EV_HTTP_RESPONSE)[-1]
 
         res = {}
         if not _response:
@@ -85,27 +84,22 @@ class CheckHTTPResponse(CriticalError):
             self._message = self.msg
             if CONT_JSON in _response.headers["content-type"]:
                 try:
-                    err = ErrorResponse().deserialize(_content, "json")
+                    err = ErrorResponse().deserialize(_response.txt, "json")
                     self._message = err.to_json()
                 except Exception:
-                    res["content"] = _content
+                    res["content"] = _response.text
             else:
-                res["content"] = _content
-            res["url"] = conv.position
+                res["content"] = _response.text
+            res["url"] = _response.url
             res["http_status"] = _response.status_code
         elif _response.status_code in [300, 301, 302]:
             pass
         else:
             # might still be an error message
-            try:
-                err = ErrorResponse().deserialize(_content, "json")
-                err.verify()
-                self._message = err.to_json()
+            msg = conv.events.last_item(EV_PROTOCOL_RESPONSE)
+            if isinstance(msg, ErrorResponse):
+                self._message = msg.to_json()
                 self._status = self.status
-            except Exception:
-                pass
-
-            res["url"] = conv.position
 
         return res
 
@@ -203,10 +197,9 @@ class VerifyBadRequestResponse(ExpectedError):
 
     def _func(self, conv):
         _response = conv.events.last_item(EV_HTTP_RESPONSE)
-        _content = conv.events.last_item(EV_RESPONSE)
         res = {}
         if _response.status_code == 400:
-            err = ErrorResponse().deserialize(_content, "json")
+            err = ErrorResponse().deserialize(_response.text, "json")
             try:
                 err.verify()
             except MissingRequiredAttribute:
@@ -220,6 +213,7 @@ class VerifyBadRequestResponse(ExpectedError):
         elif _response.status_code in [301, 302, 303]:
             pass
         elif _response.status_code < 300:
+            _content = conv.events.last_item(EV_RESPONSE)
             err = ErrorResponse().deserialize(_content, "json")
             try:
                 err.verify()
@@ -351,17 +345,17 @@ class CheckErrorResponse(ExpectedError):
         res = {}
         # did I get one, should only be one
         try:
-            instance, _ = get_protocol_response(conv, ErrorResponse)[0]
+            _ = get_protocol_response(conv, ErrorResponse)[0]
         except ValueError:
             pass
         else:
             return res
 
         _response = conv.events.last_item(EV_HTTP_RESPONSE)
-        _content = conv.last_content
 
         if _response.status_code >= 400:
             content_type = _response.headers["content-type"]
+            _content = _response.text
             if content_type is None:
                 res["content"] = _content
             elif CONT_JSON in content_type:
@@ -376,16 +370,9 @@ class CheckErrorResponse(ExpectedError):
         elif _response.status_code in [300, 301, 302, 303]:
             pass
         else:
-            # might still be an error message
-            try:
-                self.err = ErrorResponse().deserialize(_content, "json")
-                self.err.verify()
-                res["content"] = self.err.to_json()
-            except Exception:
-                self._message = "Expected an error message"
-                self._status = CRITICAL
-
-            res["url"] = conv.position
+            # Should never get here
+            self._message = 'Not an error message ??'
+            self._status = WARNING
 
         return res
 
