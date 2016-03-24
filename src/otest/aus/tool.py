@@ -6,7 +6,7 @@ from aatest import Break
 from aatest.check import State
 from aatest.check import OK
 from aatest.events import EV_CONDITION
-from aatest.events import EV_HTTP_RESPONSE
+from aatest.events import EV_REDIRECT_URL
 from aatest.io import eval_state
 from aatest.io import safe_path
 from aatest.session import Done
@@ -118,7 +118,8 @@ class WebTester(Tester):
         if resp:
             self.sh["index"] = index
             if isinstance(resp, Response):
-                self.conv.events.store(EV_HTTP_RESPONSE, resp)
+                if self.conv.events.last_event_type() != EV_REDIRECT_URL:
+                    self.conv.events.store(EV_REDIRECT_URL, resp.message)
                 return resp(self.inut.environ, self.inut.start_response)
             else:
                 return resp
@@ -214,6 +215,9 @@ class WebTester(Tester):
             self.conv = self.sh["conv"]
 
         index += 1
+
+        self.inut.store_test_info()
+        store_test_state(self.sh, self.conv.events)
 
         try:
             return self.run_flow(path, conf=ENV["conf"], index=index)
