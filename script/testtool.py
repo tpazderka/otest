@@ -55,8 +55,7 @@ LOOKUP = TemplateLookup(directories=[ROOT + 'htdocs'],
                         input_encoding='utf-8', output_encoding='utf-8')
 
 
-
-def run_assertions(op_env, testspecs, conversation):
+def run_assertions(op_env, test_specs, conversation):
     try:
         req = conversation.events.last_item(EV_PROTOCOL_REQUEST)
     except NoSuchEvent:
@@ -64,221 +63,221 @@ def run_assertions(op_env, testspecs, conversation):
     else:
         _ver = Verify(None, conversation)
         _ver.test_sequence(
-            testspecs[op_env['test_id']][req.__class__.__name__]["assert"])
+            test_specs[op_env['test_id']][req.__class__.__name__]["assert"])
 
 
 def construct_url(op, params, start_page):
     _params = params
     _params = _params.replace('<issuer>', op.baseurl)
-    args = dict([p.split('=') for p in _params.split('&')])
-    return start_page + '?' + urlencode(args)
+    _args = dict([p.split('=') for p in _params.split('&')])
+    return start_page + '?' + urlencode(_args)
 
 
-def application(environ, start_response):
-    session = environ['beaker.session']
-    path = environ.get('PATH_INFO', '').lstrip('/')
+class WebApplication(object):
+    def __init__(self, test_specs, conf_response, urls, lookup, op_env):
+        self.test_specs = test_specs
+        self.conf_response = conf_response
+        self.urls = urls
+        self.lookup = lookup
+        self.op_env = op_env
 
-    testspecs = session._params['test_specs']
-    conf_response = session._params['conf_response']
-    urls = session._params['urls']
+    def application(self, environ, start_response):
+        #  session = environ['beaker.session']
 
-    if path == "robots.txt":
-        resp = static("static/robots.txt")
-        return resp(environ, start_response)
-    elif path.startswith("static/"):
-        resp = static(path)
-        return resp(environ, start_response)
-    elif path.startswith("favicon.ico"):
-        resp = static('static/favicon.ico')
-        return resp(environ, start_response)
-    elif path == '':
-        sid = INST.new_map()
-        INST.remove_old()
-        info = INST[sid]
+        path = environ.get('PATH_INFO', '').lstrip('/')
 
-        resp = Response(mako_template="test.mako",
-                        template_lookup=session._params['lookup'],
-                        headers=[])
-
-        kwargs = {
-            'events': '',
-            'id': sid,
-            'start_page': '',
-            'params': '',
-            'issuer': info['op'].baseurl,
-            'http_result': '',
-            'profiles': INST.profiles,
-            'selected': info['selected']
-        }
-        return resp(environ, start_response, **kwargs)
-    elif path == 'cp':
-        qs = parse_qs(environ["QUERY_STRING"])
-        resp = Response(mako_template="profile.mako",
-                        template_lookup=session._params['lookup'],
-                        headers=[])
-        specs = loads(open('config_params.json').read())
-        kwargs = {'specs': specs, 'id': qs['id'][0], 'selected': {}}
-        return resp(environ, start_response, **kwargs)
-    elif path == 'profile':
-        qs = parse_qs(environ["QUERY_STRING"])
-        sid = qs['_id_'][0]
-        del qs['_id_']
-        try:
-            info = INST[sid]
-        except KeyError:
-            INST.new_map(sid)
-            info = INST[sid]
-
-        op = info['op']
-        for key, val in qs.items():
-            if val == ['True']:
-                qs[key] = True
-            elif val == ['False']:
-                qs[key] = False
-
-        if op.verify_capabilities(qs):
-            op.capabilities = conf_response(**qs)
-        else:
-            # Shouldn't happen
-            resp = ServiceError('Capabilities error')
+        if path == "robots.txt":
+            resp = static("static/robots.txt")
             return resp(environ, start_response)
-
-        info['selected'] = qs
-
-        session._params['op_env']['test_id'] = 'default'
-        url = construct_url(op, info['params'], info['start_page'])
-        try:
-            rp_resp = requests.request('GET', url, verify=False)
-        except Exception as err:
-            resp = ServiceError(err)
+        elif path.startswith("static/"):
+            resp = static(path)
             return resp(environ, start_response)
-
-        if rp_resp.status_code != 200:
-            if rp_resp.text:
-                result = '{}:{}'.format(rp_resp.status_code, rp_resp.text)
-            else:
-                result = '{}:{}'.format(rp_resp.status_code, rp_resp.reason)
-        else:
-            result = "200 OK"
-
-        # How to recognize something went wrong ?
-        resp = Response(mako_template="test.mako",
-                        template_lookup=session._params['lookup'],
-                        headers=[])
-        kwargs = {
-            'http_result': result,
-            'events': display(info['conv'].events),
-            'id': sid,
-            'start_page': info['start_page'],
-            'params': info['params'],
-            'issuer': op.baseurl,
-            'profiles': INST.profiles,
-            'selected': info['selected']
-        }
-        return resp(environ, start_response, **kwargs)
-
-    elif path == 'rp':
-        qs = parse_qs(environ["QUERY_STRING"])
-
-        # Modify the OP configuration
-        # if 'setup' in testspecs[tid] and testspecs[tid]['setup']:
-        #     for func, args in testspecs[tid]['setup'].items():
-        #         func(_op, args)
-        sid = qs['id'][0]
-        try:
-            info = INST[sid]
-        except KeyError:
-            INST.new_map(sid)
+        elif path.startswith("favicon.ico"):
+            resp = static('static/favicon.ico')
+            return resp(environ, start_response)
+        elif path == '':
+            sid = INST.new_map()
+            INST.remove_old()
             info = INST[sid]
 
-        _conv = info['conv']
-        _op = info['op']
+            resp = Response(mako_template="test.mako",
+                            template_lookup=self.lookup, headers=[])
 
-        _prof = qs['profile'][0]
-        if _prof == 'custom':
-            info['start_page'] = qs['start_page'][0]
-            info['params'] = qs['params'][0]
-            INST[sid] = info
-            resp = SeeOther('/cp?id={}'.format(sid))
-            return resp(environ, start_response)
-        elif _prof != 'default':
-            if _op.verify_capabilities(INST.profile[_prof]):
-                _op.capabilities = conf_response(
-                    **INST.profile[_prof])
+            kwargs = {
+                'events': '',
+                'id': sid,
+                'start_page': '',
+                'params': '',
+                'issuer': info['op'].baseurl,
+                'http_result': '',
+                'profiles': INST.profiles,
+                'selected': info['selected']
+            }
+            return resp(environ, start_response, **kwargs)
+        elif path == 'cp':
+            qs = parse_qs(environ["QUERY_STRING"])
+            resp = Response(mako_template="profile.mako",
+                            template_lookup=self.lookup, headers=[])
+            specs = loads(open('config_params.json').read())
+            kwargs = {'specs': specs, 'id': qs['id'][0], 'selected': {}}
+            return resp(environ, start_response, **kwargs)
+        elif path == 'profile':
+            qs = parse_qs(environ["QUERY_STRING"])
+            sid = qs['_id_'][0]
+            del qs['_id_']
+            try:
+                info = INST[sid]
+            except KeyError:
+                INST.new_map(sid)
+                info = INST[sid]
+
+            op = info['op']
+            for key, val in qs.items():
+                if val == ['True']:
+                    qs[key] = True
+                elif val == ['False']:
+                    qs[key] = False
+
+            if op.verify_capabilities(qs):
+                op.capabilities = self.conf_response(**qs)
             else:
                 # Shouldn't happen
                 resp = ServiceError('Capabilities error')
                 return resp(environ, start_response)
 
-        session._params['op_env']['test_id'] = 'default'
-        url = construct_url(_op, qs['params'][0], qs['start_page'][0])
+            info['selected'] = qs
 
-        try:
-            rp_resp = requests.request('GET', url, verify=False)
-        except Exception as err:
-            resp = ServiceError(err)
-            return resp(environ, start_response)
+            self.op_env['test_id'] = 'default'
+            url = construct_url(op, info['params'], info['start_page'])
+            try:
+                rp_resp = requests.request('GET', url, verify=False)
+            except Exception as err:
+                resp = ServiceError(err)
+                return resp(environ, start_response)
 
-        if rp_resp.status_code != 200:
-            result = '{}:{}'.format(rp_resp.status_code, rp_resp.text)
-        else:
-            result = ""
+            if rp_resp.status_code != 200:
+                if rp_resp.text:
+                    result = '{}:{}'.format(rp_resp.status_code, rp_resp.text)
+                else:
+                    result = '{}:{}'.format(rp_resp.status_code, rp_resp.reason)
+            else:
+                result = "200 OK"
 
-        # How to recognize something went wrong ?
-        resp = Response(mako_template="test.mako",
-                        template_lookup=session._params['lookup'],
-                        headers=[])
-        kwargs = {
-            'http_result': result,
-            'events': display(_conv.events),
-            'id': sid,
-            'start_page': qs['start_page'][0],
-            'params': qs['params'][0],
-            'issuer': _op.baseurl,
-            'profiles': INST.profiles,
-            'selected': info['selected']
-        }
-        return resp(environ, start_response, **kwargs)
+            # How to recognize something went wrong ?
+            resp = Response(mako_template="test.mako",
+                            template_lookup=self.lookup, headers=[])
+            kwargs = {
+                'http_result': result,
+                'events': display(info['conv'].events),
+                'id': sid,
+                'start_page': info['start_page'],
+                'params': info['params'],
+                'issuer': op.baseurl,
+                'profiles': INST.profiles,
+                'selected': info['selected']
+            }
+            return resp(environ, start_response, **kwargs)
 
-    if '/' in path:
-        sid, _path = path.split('/', 1)
-        info = INST[sid]
-        environ["oic.op"] = info['op']
-        conversation = info['conv']
-        conversation.events.store('path', _path)
+        elif path == 'rp':
+            qs = parse_qs(environ["QUERY_STRING"])
 
-        for regex, callback in urls:
-            match = re.search(regex, _path)
-            if match is not None:
-                try:
-                    environ['oic.url_args'] = match.groups()[0]
-                except IndexError:
-                    environ['oic.url_args'] = _path
+            # Modify the OP configuration
+            # if 'setup' in testspecs[tid] and testspecs[tid]['setup']:
+            #     for func, args in testspecs[tid]['setup'].items():
+            #         func(_op, args)
+            sid = qs['id'][0]
+            try:
+                info = INST[sid]
+            except KeyError:
+                INST.new_map(sid)
+                info = INST[sid]
 
-                logger.info("callback: %s" % callback)
-                try:
-                    resp = callback(environ, conversation.events)
-                    # assertion checks
-                    run_assertions(session._params['op_env'], testspecs,
-                                   conversation)
-                    if eval_state(conversation.events) > WARNING:
-                        err_desc = get_errors(conversation.events)
-                        err_msg = ErrorResponse(error='invalid_request',
-                                                error_description=err_desc)
-                        resp = BadRequest(err_msg.to_json())
+            _conv = info['conv']
+            _op = info['op']
+
+            _prof = qs['profile'][0]
+            if _prof == 'custom':
+                info['start_page'] = qs['start_page'][0]
+                info['params'] = qs['params'][0]
+                INST[sid] = info
+                resp = SeeOther('/cp?id={}'.format(sid))
+                return resp(environ, start_response)
+            elif _prof != 'default':
+                if _op.verify_capabilities(INST.profile[_prof]):
+                    _op.capabilities = self.conf_response(
+                        **INST.profile[_prof])
+                else:
+                    # Shouldn't happen
+                    resp = ServiceError('Capabilities error')
+                    return resp(environ, start_response)
+
+            self.op_env['test_id'] = 'default'
+            url = construct_url(_op, qs['params'][0], qs['start_page'][0])
+
+            try:
+                rp_resp = requests.request('GET', url, verify=False)
+            except Exception as err:
+                resp = ServiceError(err)
+                return resp(environ, start_response)
+
+            if rp_resp.status_code != 200:
+                result = '{}:{}'.format(rp_resp.status_code, rp_resp.text)
+            else:
+                result = ""
+
+            # How to recognize something went wrong ?
+            resp = Response(mako_template="test.mako",
+                            template_lookup=self.lookup, headers=[])
+            kwargs = {
+                'http_result': result,
+                'events': display(_conv.events),
+                'id': sid,
+                'start_page': qs['start_page'][0],
+                'params': qs['params'][0],
+                'issuer': _op.baseurl,
+                'profiles': INST.profiles,
+                'selected': info['selected']
+            }
+            return resp(environ, start_response, **kwargs)
+
+        if '/' in path:
+            sid, _path = path.split('/', 1)
+            info = INST[sid]
+            environ["oic.op"] = info['op']
+            conversation = info['conv']
+            conversation.events.store('path', _path)
+
+            for regex, callback in self.urls:
+                match = re.search(regex, _path)
+                if match is not None:
+                    try:
+                        environ['oic.url_args'] = match.groups()[0]
+                    except IndexError:
+                        environ['oic.url_args'] = _path
+
+                    logger.info("callback: %s" % callback)
+                    try:
+                        resp = callback(environ, conversation.events)
+                        # assertion checks
+                        run_assertions(self.op_env, testspecs, conversation)
+                        if eval_state(conversation.events) > WARNING:
+                            err_desc = get_errors(conversation.events)
+                            err_msg = ErrorResponse(error='invalid_request',
+                                                    error_description=err_desc)
+                            resp = BadRequest(err_msg.to_json())
+                            return resp(environ, start_response)
+
+                        return resp(environ, start_response)
+                    except Exception as err:
+                        print("%s" % err)
+                        print(traceback.format_exception(*sys.exc_info()))
+                        logger.exception("%s" % err)
+                        resp = ServiceError("%s" % err)
                         return resp(environ, start_response)
 
-                    return resp(environ, start_response)
-                except Exception as err:
-                    print("%s" % err)
-                    print(traceback.format_exception(*sys.exc_info()))
-                    logger.exception("%s" % err)
-                    resp = ServiceError("%s" % err)
-                    return resp(environ, start_response)
-
-    logger.debug("Unknown page: %s" % path)
-    resp = NotFound("Couldn't find the page you asked for!")
-    return resp(environ, start_response)
+        logger.debug("Unknown page: %s" % path)
+        resp = NotFound("Couldn't find the page you asked for!")
+        return resp(environ, start_response)
 
 
 if __name__ == '__main__':
@@ -336,13 +335,13 @@ if __name__ == '__main__':
                             input_encoding='utf-8',
                             output_encoding='utf-8')
 
+    WA = WebApplication(testspecs, tool_args['configuration_response'], _urls,
+                        LOOKUP, {})
+
     # Initiate the web server
     SRV = wsgiserver.CherryPyWSGIServer(
         ('0.0.0.0', int(args.port)),
-        SessionMiddleware(application, session_opts,
-                          test_specs=testspecs, op_env={}, lookup=LOOKUP,
-                          conf_response=tool_args['configuration_response'],
-                          urls=_urls))
+        SessionMiddleware(WA.application, session_opts))
 
     if _base.startswith("https"):
         from cherrypy.wsgiserver.ssl_builtin import BuiltinSSLAdapter
