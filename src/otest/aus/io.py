@@ -8,6 +8,7 @@ from aatest import Break
 from aatest.events import EV_CONDITION
 from aatest.io import IO
 from aatest.log import with_or_without_slash
+from aatest.result import Result
 
 from oic.utils.http_util import NotFound
 from oic.utils.http_util import Response
@@ -43,32 +44,6 @@ class WebIO(IO):
         self.environ = environ
         self.start_response = start_response
 
-    def store_test_info(self, profile_info=None):
-        _conv = self.session["conv"]
-        _info = {
-            "trace": _conv.trace,
-            "events": _conv.events,
-            "index": self.session["index"],
-            "seqlen": len(self.session["sequence"]),
-            "descr": self.session["node"].desc
-        }
-
-        try:
-            _info["node"] = self.session["node"]
-        except KeyError:
-            pass
-
-        if profile_info:
-            _info["profile_info"] = profile_info
-        else:
-            try:
-                _info["profile_info"] = get_profile_info(self.session,
-                                                         self.session["testid"])
-            except KeyError:
-                pass
-
-        self.session["test_info"][self.session["testid"]] = _info
-
     def flow_list(self):
         try:
             resp = Response(mako_template="flowlist.mako",
@@ -78,12 +53,13 @@ class WebIO(IO):
             logger.error(err)
             raise
 
-        try:
-            _tid = self.session["testid"]
-        except KeyError:
-            _tid = None
-
-        self.print_info(self.session, _tid)
+        # try:
+        #     _tid = self.session["testid"]
+        # except KeyError:
+        #     _tid = None
+        #
+        # res = Result(self.session, self.profile_handler)
+        # res.print_info(_tid)
 
         argv = {
             "flows": self.session["tests"],
@@ -212,60 +188,8 @@ class WebIO(IO):
                 resp = Response("No saved logs")
                 return resp(self.environ, self.start_response)
 
-    @staticmethod
-    def get_err_type(session):
-        errt = WARNING
-        try:
-            if session["node"].mti == {"all": "MUST"}:
-                errt = ERROR
-        except KeyError:
-            pass
-        return errt
-
-    def log_fault(self, session, err, where, err_type=0):
-        if err_type == 0:
-            err_type = self.get_err_type(session)
-
-        if "node" in session:
-            if err:
-                if isinstance(err, Break):
-                    session["node"].state = WARNING
-                else:
-                    session["node"].state = err_type
-            else:
-                session["node"].state = err_type
-
-        if "conv" in session:
-            if err:
-                if isinstance(err, str):
-                    pass
-                else:
-                    session["conv"].trace.error("%s:%s" % (
-                        err.__class__.__name__, str(err)))
-                session["conv"].events.store(EV_CONDITION,
-                                             State("Fault", status=ERROR,
-                                                   name=err_type,
-                                                   message="{}".format(err)))
-            else:
-                session["conv"].events.store(
-                    EV_CONDITION, State(
-                        "Fault", status=ERROR,
-                        name=err_type,
-                        message="Error in %s" % where))
-
     def err_response(self, where, err):
-        if err:
-            exception_trace(where, err, logger)
-
-        self.log_fault(self.session, err, where)
-
-        try:
-            _tid = self.session["testid"]
-            self.print_info(self.session, _tid)
-            self.store_test_info(self.session)
-        except KeyError:
-            pass
-
+        self._err_response(where, err)
         return self.flow_list()
 
     def sorry_response(self, homepage, err):

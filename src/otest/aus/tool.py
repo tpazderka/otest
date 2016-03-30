@@ -8,7 +8,7 @@ from aatest.check import OK
 from aatest.events import EV_CONDITION
 from aatest.events import EV_REDIRECT_URL
 from aatest.io import eval_state
-from aatest.io import safe_path
+from aatest.result import safe_path, Result
 from aatest.session import Done
 from aatest.summation import store_test_state
 from aatest.tool import Tester
@@ -105,7 +105,7 @@ class WebTester(Tester):
         _cli = self.make_entity(**kw_args)
         self.conv = Conversation(_flow, _cli, kw_args["msg_factory"],
                                  trace_cls=Trace, callback_uris=redirs)
-        #_cli.conv = self.conv
+        # _cli.conv = self.conv
         _cli.event_store = self.conv.events
         # since webfinger is not used
         self.conv.info['issuer'] = kw_args['conf'].INFO["srv_discovery_url"]
@@ -130,7 +130,8 @@ class WebTester(Tester):
         sess = self.sh
         sess['node'].complete = complete
         sess['node'].state = eval_state(sess['conv'].events)
-        self.inut.print_info(sess, test_id)
+        res = Result(sess, self.kwargs['profile_handler'])
+        res.print_info(test_id, self.fname(test_id))
 
     def fname(self, test_id):
         try:
@@ -161,7 +162,7 @@ class WebTester(Tester):
             logger.info("<--<-- {} --- {} -->-->".format(index, cls))
             try:
                 _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
-                            profile=self.profile,test_id=test_id, conf=conf,
+                            profile=self.profile, test_id=test_id, conf=conf,
                             funcs=funcs, check_factory=self.chk_factory,
                             cache=self.cache)
                 self.conv.operation = _oper
@@ -191,13 +192,14 @@ class WebTester(Tester):
         except Exception as err:
             raise
 
+        res = Result(self.sh, self.kwargs['profile_handler'])
         if isinstance(_oper, Done):
             self.conv.events.store(EV_CONDITION, State('Done', status=OK))
-            self.inut.store_test_info()
+            res.store_test_info()
             store_test_state(self.sh, self.conv.events)
-            self.inut.print_info(test_id, self.fname(test_id))
+            res.print_info(test_id, self.fname(test_id))
         else:
-            self.inut.store_test_info()
+            res.store_test_info()
             store_test_state(self.sh, self.conv.events)
 
     def cont(self, environ, ENV):
@@ -223,7 +225,8 @@ class WebTester(Tester):
             return self.run_flow(path, conf=ENV["conf"], index=index)
         except Exception as err:
             exception_trace("", err, logger)
-            self.inut.print_info(path)
+            res = Result(self.sh, self.kwargs['profile_handler'])
+            res.print_info(path)
             return self.inut.err_response("run", err)
 
     def async_response(self, conf):
@@ -238,7 +241,8 @@ class WebTester(Tester):
 
         logger.info("<--<-- {} --- {}".format(index, cls))
         resp = self.conv.operation.parse_response(self.sh["testid"],
-                                                  self.inut, self.message_factory)
+                                                  self.inut,
+                                                  self.message_factory)
         if resp:
             return resp
 
