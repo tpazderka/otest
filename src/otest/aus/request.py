@@ -159,12 +159,13 @@ class SyncRequest(Request):
                 else:
                     if "kid" not in _id_token.jws_header and not \
                                     _id_token.jws_header["alg"] == "HS256":
-                        for key, value in \
-                                self.conv.entity.keyjar.issuer_keys.items():
-                            if not key == "" and (len(value) > 1 or len(
-                                    list(value[0].keys())) > 1):
-                                raise PyoidcError(
-                                    "No 'kid' in id_token header!")
+                        keys = self.conv.entity.keyjar.keys_by_alg_and_usage(
+                            issuer=_id_token['iss'],
+                            alg=_id_token.jws_header["alg"],
+                            usage='sig'
+                        )
+                        if len(keys) > 1:
+                            raise PyoidcError("No 'kid' in id_token header!")
 
                     if self.req_args['nonce'] != _id_token['nonce']:
                         raise PyoidcError(

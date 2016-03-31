@@ -3,15 +3,17 @@ from urllib.parse import parse_qs
 
 from aatest import exception_trace
 from aatest import Break
-from aatest.check import State
+from aatest import tool
+from aatest.check import ERROR
 from aatest.check import OK
+from aatest.check import State
 from aatest.events import EV_CONDITION
 from aatest.events import EV_REDIRECT_URL
 from aatest.io import eval_state
-from aatest.result import safe_path, Result
+from aatest.result import Result
+from aatest.result import safe_path
 from aatest.session import Done
 from aatest.summation import store_test_state
-from aatest.tool import Tester
 from aatest.verify import Verify
 
 from oic.utils.http_util import Redirect
@@ -32,6 +34,104 @@ def get_redirect_uris(cinfo):
         return cinfo["client"]["redirect_uris"]
     except KeyError:
         return cinfo["registered"]["redirect_uris"]
+
+
+class Tester(tool.Tester):
+    def __init__(self, io, sh, profiles, profile, flows=None,
+                 check_factory=None, msg_factory=None, cache=None,
+                 map_prof=None, **kwargs):
+        tool.Tester.__init__(self, io, sh, profile=profile, flows=flows,
+                             msg_factory=msg_factory, cache=cache, **kwargs)
+        self.profiles = profiles
+        self.check_factory = check_factory
+        self.map_prof = map_prof
+        self.conv = None
+
+    def match_profile(self, test_id):
+        _spec = self.flows[test_id]
+        return self.map_prof(self.profile.split("."),
+                             _spec["profile"].split("."))
+
+    def fname(self, test_id):
+        try:
+            return safe_path(
+                self.conv.entity.provider_info['issuer'],
+                self.profile, test_id)
+        except KeyError:
+            return safe_path('dummy', self.profile, test_id)
+
+    def run_flow(self, test_id, index=0, profiles=None, conf=None):
+        logger.info("<=<=<=<=< %s >=>=>=>=>" % test_id)
+        self.sh["node"].complete = False
+        self.conv.test_id = test_id
+        self.conv.conf = conf
+
+        if index >= len(self.conv.sequence):
+            return None
+
+        res = Result(self.sh, self.kwargs['profile_handler'])
+
+        _oper = None
+        for item in self.conv.sequence[index:]:
+            self.sh["index"] = index
+            if isinstance(item, tuple):
+                cls, funcs = item
+            else:
+                cls = item
+                funcs = {}
+
+            logger.info("<--<-- {} --- {} -->-->".format(index, cls))
+            try:
+                _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
+                            profile=self.profile, test_id=test_id, conf=conf,
+                            funcs=funcs, check_factory=self.check_factory,
+                            cache=self.cache)
+                self.conv.operation = _oper
+                _oper.setup(self.profiles.PROFILEMAP)
+                resp = _oper()
+            except Break:
+                break
+            except Exception as err:
+                self.conv.events.store(
+                    EV_CONDITION,
+                    State(test_id=test_id, status=ERROR, message=err,
+                          context=cls.__name__))
+                exception_trace(cls.__name__, err, logger)
+                self.sh["index"] = index
+                res.store_test_info()
+                store_test_state(self.sh, self.conv.events)
+                return self.inut.err_response("run_sequence", err)
+            else:
+                rsp = self.handle_response(resp, index)
+                if rsp:
+                    res.store_test_info()
+                    store_test_state(self.sh, self.conv.events)
+                    return self.inut.respond(rsp)
+
+            index += 1
+
+        if isinstance(_oper, Done):
+            try:
+                if self.conv.flow["assert"]:
+                    _ver = Verify(self.check_factory, self.conv)
+                    _ver.test_sequence(self.conv.flow["assert"])
+            except KeyError:
+                pass
+            except Exception as err:
+                raise
+
+            self.conv.events.store(EV_CONDITION, State('Done', status=OK))
+            store_test_state(self.sh, self.conv.events)
+            res.store_test_info()
+            res.print_info(test_id, self.fname(test_id))
+        else:
+            store_test_state(self.sh, self.conv.events)
+            res.store_test_info()
+
+        if eval_state(self.conv.events) == OK:
+            return True
+        else:
+            return False
 
 
 class ClTester(Tester):
@@ -133,75 +233,6 @@ class WebTester(Tester):
         res = Result(sess, self.kwargs['profile_handler'])
         res.print_info(test_id, self.fname(test_id))
 
-    def fname(self, test_id):
-        try:
-            return safe_path(
-                self.conv.entity.provider_info['issuer'],
-                self.profile, test_id)
-        except KeyError:
-            return None
-
-    def run_flow(self, test_id, index=0, profiles=None, conf=None):
-        logger.info("<=<=<=<=< %s >=>=>=>=>" % test_id)
-        self.sh["node"].complete = False
-        self.conv.test_id = test_id
-        self.conv.conf = conf
-
-        if index >= len(self.conv.sequence):
-            return None
-
-        _oper = None
-        for item in self.conv.sequence[index:]:
-            self.sh["index"] = index
-            if isinstance(item, tuple):
-                cls, funcs = item
-            else:
-                cls = item
-                funcs = {}
-
-            logger.info("<--<-- {} --- {} -->-->".format(index, cls))
-            try:
-                _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
-                            profile=self.profile, test_id=test_id, conf=conf,
-                            funcs=funcs, check_factory=self.chk_factory,
-                            cache=self.cache)
-                self.conv.operation = _oper
-                _oper.setup(self.map_prof)
-                resp = _oper()
-            except Break:
-                break
-            except Exception as err:
-                self.inut.store_test_info()
-                store_test_state(self.sh, self.conv.events)
-                return self.inut.err_response("run_sequence", err)
-            else:
-                rsp = self.handle_response(resp, index)
-                if rsp:
-                    self.inut.store_test_info()
-                    store_test_state(self.sh, self.conv.events)
-                    return self.inut.respond(rsp)
-
-            index += 1
-
-        try:
-            if self.conv.flow["assert"]:
-                _ver = Verify(self.chk_factory, self.conv)
-                _ver.test_sequence(self.conv.flow["assert"])
-        except KeyError:
-            pass
-        except Exception as err:
-            raise
-
-        res = Result(self.sh, self.kwargs['profile_handler'])
-        if isinstance(_oper, Done):
-            self.conv.events.store(EV_CONDITION, State('Done', status=OK))
-            res.store_test_info()
-            store_test_state(self.sh, self.conv.events)
-            res.print_info(test_id, self.fname(test_id))
-        else:
-            res.store_test_info()
-            store_test_state(self.sh, self.conv.events)
-
     def cont(self, environ, ENV):
         query = parse_qs(environ["QUERY_STRING"])
         path = query["path"][0]
@@ -218,7 +249,8 @@ class WebTester(Tester):
 
         index += 1
 
-        self.inut.store_test_info()
+        res = Result(self.sh, self.kwargs['profile_handler'])
+        res.store_test_info()
         store_test_state(self.sh, self.conv.events)
 
         try:

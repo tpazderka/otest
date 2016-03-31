@@ -158,18 +158,20 @@ class WebApplication(object):
             except Exception as err:
                 return inut.err_response("authz_cb", err)
             else:
-                if resp:
+                if resp is False or resp is True:
+                    pass
+                elif resp:
                     return resp
-                else:
-                    try:
-                        #return inut.flow_list()
-                        resp = SeeOther(
-                            "/display#{}".format(
-                                self.pick_grp(sh['conv'].test_id)))
-                        return resp(environ, start_response)
-                    except Exception as err:
-                        logger.error(err)
-                        raise
+
+                try:
+                    #return inut.flow_list()
+                    resp = SeeOther(
+                        "/display#{}".format(
+                            self.pick_grp(sh['conv'].test_id)))
+                    return resp(environ, start_response)
+                except Exception as err:
+                    logger.error(err)
+                    raise
         else:
             resp = BadRequest()
             return resp(environ, start_response)

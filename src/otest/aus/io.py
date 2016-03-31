@@ -3,13 +3,6 @@ import os
 
 from urllib.parse import unquote
 
-from aatest import exception_trace
-from aatest import Break
-from aatest.events import EV_CONDITION
-from aatest.io import IO
-from aatest.log import with_or_without_slash
-from aatest.result import Result
-
 from oic.utils.http_util import NotFound
 from oic.utils.http_util import Response
 
@@ -17,12 +10,11 @@ from aatest.check import ERROR
 from aatest.check import OK
 from aatest.check import WARNING
 from aatest.check import INCOMPLETE
-from aatest.check import State
+from aatest.io import IO
+from aatest.log import with_or_without_slash
 from aatest.summation import represent_result
 from aatest.summation import store_test_state
 from aatest.utils import get_test_info
-
-from otest.aus.utils import get_profile_info
 
 __author__ = 'roland'
 
@@ -216,12 +208,3 @@ class WebIO(IO):
             return resp(self.environ, self.start_response)
         else:
             return resp
-
-
-SIGN = {OK: "+", WARNING: "?", ERROR: "-", INCOMPLETE: "!"}
-
-
-class ClIO(IO):
-    def flow_list(self, session):
-        pass
-
