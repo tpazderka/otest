@@ -1,5 +1,4 @@
 import json
-from json.decoder import JSONDecodeError
 
 from aatest.check import OK
 from aatest.check import WARNING
@@ -77,7 +76,7 @@ def do_http_info(event):
     res.append('<tr><td>message</td><td><pre>')
     try:
         res.extend(print_message(json.loads(d['message'])))
-    except JSONDecodeError:
+    except ValueError:
         res.extend(adjust_lines(d['message']))
     res.append('</pre></td></tr>')
     res.extend(['</table>'])
@@ -98,7 +97,7 @@ def do_http_response(event):
     res.append('<tr><td>message</td><td><pre>')
     try:
         res.extend(print_message(json.loads(d.text)))
-    except JSONDecodeError:
+    except ValueError:
         res.extend(adjust_lines(d.text))
     res.append('</pre></td></tr>')
     res.extend(['</table>'])
@@ -116,7 +115,7 @@ def do_request(event):
     res = ['<h4>Request</h4>', '<pre>']
     try:
         res.extend(print_message(json.loads(event.data)))
-    except JSONDecodeError:
+    except ValueError:
         res.extend(adjust_lines(event.data))
     res.append('</pre>')
     return res

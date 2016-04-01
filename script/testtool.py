@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import importlib
 from json import loads
 import logging
