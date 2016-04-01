@@ -2,8 +2,10 @@ import inspect
 import json
 import sys
 
-from urllib.parse import urlencode
-from urllib.parse import urlparse
+#from urllib.parse import urlencode
+#from urllib.parse import urlparse
+from future.backports.urllib.parse import urlparse
+from future.backports.urllib.parse import urlencode
 
 from aatest import ConfigurationError
 from aatest.check import State

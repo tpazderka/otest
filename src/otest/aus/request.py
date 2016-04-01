@@ -6,7 +6,8 @@ import copy
 import sys
 
 from bs4 import BeautifulSoup
-from urllib.parse import parse_qs
+#from urllib.parse import parse_qs
+from future.backports.urllib.parse import parse_qs
 from requests.models import Response
 
 from oic.exception import IssuerMismatch

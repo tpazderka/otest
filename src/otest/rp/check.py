@@ -3,7 +3,8 @@ import json
 import sys
 import requests
 
-from urllib.parse import urlparse
+#from urllib.parse import urlparse
+from future.backports.urllib.parse import urlparse
 
 from aatest.check import Check
 from aatest.check import ERROR

@@ -1,7 +1,8 @@
 import logging
 import os
 
-from urllib.parse import unquote
+#from urllib.parse import unquote
+from future.backports.urllib.parse import unquote
 
 from oic.utils.http_util import NotFound
 from oic.utils.http_util import Response
