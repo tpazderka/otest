@@ -46,7 +46,8 @@ setup(
         'oic',
         'pyjwkest',
         'future',
-        'entropy'
+        'entropy',
+        'cherrypy'
     ],
     zip_safe=False,
 )
