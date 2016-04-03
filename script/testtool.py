@@ -76,12 +76,14 @@ def construct_url(op, params, start_page):
 
 
 class WebApplication(object):
-    def __init__(self, test_specs, conf_response, urls, lookup, op_env):
+    def __init__(self, test_specs, conf_response, urls, lookup, op_env, 
+                 instances):
         self.test_specs = test_specs
         self.conf_response = conf_response
         self.urls = urls
         self.lookup = lookup
         self.op_env = op_env
+        self.instances = instances
 
     def application(self, environ, start_response):
         #  session = environ['beaker.session']
@@ -98,9 +100,9 @@ class WebApplication(object):
             resp = static('static/favicon.ico')
             return resp(environ, start_response)
         elif path == '':
-            sid = INST.new_map()
-            INST.remove_old()
-            info = INST[sid]
+            sid = self.instances.new_map()
+            self.instances.remove_old()
+            info = self.instances[sid]
 
             resp = Response(mako_template="test.mako",
                             template_lookup=self.lookup, headers=[])
@@ -112,7 +114,7 @@ class WebApplication(object):
                 'params': '',
                 'issuer': info['op'].baseurl,
                 'http_result': '',
-                'profiles': INST.profiles,
+                'profiles': self.instances.profiles,
                 'selected': info['selected']
             }
             return resp(environ, start_response, **kwargs)
@@ -128,10 +130,10 @@ class WebApplication(object):
             sid = qs['_id_'][0]
             del qs['_id_']
             try:
-                info = INST[sid]
+                info = self.instances[sid]
             except KeyError:
-                INST.new_map(sid)
-                info = INST[sid]
+                self.instances.new_map(sid)
+                info = self.instances[sid]
 
             op = info['op']
             for key, val in qs.items():
@@ -175,7 +177,7 @@ class WebApplication(object):
                 'start_page': info['start_page'],
                 'params': info['params'],
                 'issuer': op.baseurl,
-                'profiles': INST.profiles,
+                'profiles': self.instances.profiles,
                 'selected': info['selected']
             }
             return resp(environ, start_response, **kwargs)
@@ -189,10 +191,10 @@ class WebApplication(object):
             #         func(_op, args)
             sid = qs['id'][0]
             try:
-                info = INST[sid]
+                info = self.instances[sid]
             except KeyError:
-                INST.new_map(sid)
-                info = INST[sid]
+                self.instances.new_map(sid)
+                info = self.instances[sid]
 
             _conv = info['conv']
             _op = info['op']
@@ -201,13 +203,13 @@ class WebApplication(object):
             if _prof == 'custom':
                 info['start_page'] = qs['start_page'][0]
                 info['params'] = qs['params'][0]
-                INST[sid] = info
+                self.instances[sid] = info
                 resp = SeeOther('/cp?id={}'.format(sid))
                 return resp(environ, start_response)
             elif _prof != 'default':
-                if _op.verify_capabilities(INST.profile[_prof]):
+                if _op.verify_capabilities(self.instances.profile[_prof]):
                     _op.capabilities = self.conf_response(
-                        **INST.profile[_prof])
+                        **self.instances.profile[_prof])
                 else:
                     # Shouldn't happen
                     resp = ServiceError('Capabilities error')
@@ -237,14 +239,41 @@ class WebApplication(object):
                 'start_page': qs['start_page'][0],
                 'params': qs['params'][0],
                 'issuer': _op.baseurl,
-                'profiles': INST.profiles,
+                'profiles': self.instances.profiles,
                 'selected': info['selected']
             }
             return resp(environ, start_response, **kwargs)
 
         if '/' in path:
             sid, _path = path.split('/', 1)
-            info = INST[sid]
+            try:
+                info = self.instances[sid]
+            except KeyError:
+                sid = self.instances.new_map(sid)
+                info = self.instances[sid]
+                self.op_env['test_id'] = 'default'
+
+            if _path == "result":
+                resp = Response(mako_template="test.mako",
+                                template_lookup=self.lookup, headers=[])
+                _conv = info['conv']
+                _op = info['op']
+                kwargs = {
+                    'http_result': '',
+                    'events': display(_conv.events),
+                    'id': sid,
+                    'start_page': '',
+                    'params': '',
+                    'issuer': _op.baseurl,
+                    'profiles': self.instances.profiles,
+                    'selected': info['selected']
+                }
+                return resp(environ, start_response, **kwargs)
+            elif _path == 'reset':
+                self.instances.new_map(sid)
+                resp = Response('Done')
+                return resp(environ, start_response)
+
             environ["oic.op"] = info['op']
             conversation = info['conv']
             conversation.events.store('path', _path)
@@ -310,8 +339,9 @@ if __name__ == '__main__':
 
     _base = "{base}:{port}/".format(base=config.baseurl, port=args.port)
 
-    INST = Instances(as_args, _base, op_arg['profiles'], tool_args['provider'],
-                     uri_schemes=op_arg['uri_schemes'])
+    _instances = Instances(as_args, _base, op_arg['profiles'],
+                           tool_args['provider'],
+                           uri_schemes=op_arg['uri_schemes'])
 
     session_opts = {
         'session.type': 'memory',
@@ -338,7 +368,7 @@ if __name__ == '__main__':
                             output_encoding='utf-8')
 
     WA = WebApplication(testspecs, tool_args['configuration_response'], _urls,
-                        LOOKUP, {})
+                        LOOKUP, {}, _instances)
 
     # Initiate the web server
     SRV = wsgiserver.CherryPyWSGIServer(

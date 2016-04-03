@@ -6,7 +6,7 @@ import os
 import time
 import sys
 
-from Crypto.PublicKey import RSA
+from Cryptodome.PublicKey import RSA
 from future.backports.urllib.parse import urlparse
 
 from jwkest.jwk import RSAKey
