@@ -162,6 +162,11 @@ def main_setup(args, lookup, config):
         f.write(json.dumps(jwks))
         f.close()
 
+        try:
+            _op.keyjar.verify_ssl = kwargs['verify_ssl']
+        except KeyError:
+            pass
+
         as_args['keyjar'] = _op.keyjar
         as_args['sdb'] = SessionDB(
             com_args["baseurl"],
