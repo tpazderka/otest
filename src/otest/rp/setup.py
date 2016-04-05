@@ -15,7 +15,7 @@ from oic.utils.userinfo import UserInfo
 
 from otest.rp.provider import Provider
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 __author__ = 'roland'
 
@@ -144,6 +144,8 @@ def main_setup(args, lookup, config):
 
     op_arg["baseurl"] = _baseurl
 
+    logger.info('setup kwargs: {}'.format(kwargs))
+
     # Add own keys for signing/encrypting JWTs
     try:
         # a throw-away OP used to do the initial key setup
@@ -193,6 +195,9 @@ def main_setup(args, lookup, config):
         profiles = {}
 
     op_arg['profiles'] = profiles
+
+    logger.info("setup as_args: {}".format(as_args))
+    logger.info(" --   op_arg: {}".format(op_arg))
 
     return as_args, op_arg, config
 

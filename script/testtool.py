@@ -75,6 +75,11 @@ def construct_url(op, params, start_page):
     return start_page + '?' + urlencode(_args)
 
 
+def connection_error(environ, start_response, err):
+    resp = Response("Connection error: {}".format(err))
+    return resp(environ, start_response)
+
+
 class WebApplication(object):
     def __init__(self, test_specs, conf_response, urls, lookup, op_env, 
                  instances):
@@ -156,8 +161,7 @@ class WebApplication(object):
             try:
                 rp_resp = requests.request('GET', url, verify=False)
             except Exception as err:
-                resp = ServiceError(err)
-                return resp(environ, start_response)
+                return connection_error(environ, start_response, err)
 
             if rp_resp.status_code != 200:
                 if rp_resp.text:
