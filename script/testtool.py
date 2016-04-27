@@ -329,6 +329,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', dest='insecure', action='store_true')
     parser.add_argument('-t', dest='tests')
     parser.add_argument('-P', dest='profiles')
+    parser.add_argument('-t', dest='tls', action='store_true')
     parser.add_argument(dest="config")
     args = parser.parse_args()
 
@@ -379,7 +380,7 @@ if __name__ == '__main__':
         ('0.0.0.0', int(args.port)),
         SessionMiddleware(WA.application, session_opts))
 
-    if _base.startswith("https"):
+    if args.tls:
         from cherrypy.wsgiserver.ssl_builtin import BuiltinSSLAdapter
 
         SRV.ssl_adapter = BuiltinSSLAdapter(config.SERVER_CERT,
