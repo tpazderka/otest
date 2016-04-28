@@ -329,7 +329,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', dest='insecure', action='store_true')
     parser.add_argument('-t', dest='tests')
     parser.add_argument('-P', dest='profiles')
-    parser.add_argument('-t', dest='tls', action='store_true')
+    parser.add_argument('-s', dest='tls', action='store_true')
     parser.add_argument(dest="config")
     args = parser.parse_args()
 
