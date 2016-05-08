@@ -288,4 +288,5 @@ def factory(cid):
             except AttributeError:
                 pass
 
-    return None
+    from aatest import check
+    return check.factory(cid)

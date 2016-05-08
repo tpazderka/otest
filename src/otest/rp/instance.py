@@ -1,20 +1,26 @@
 import time
 from oic import rndstr
+from oidctest.session import SessionHandler
 from otest.conversation import Conversation
 
 __author__ = 'roland'
 
 
 class Instances(object):
-    def __init__(self, as_args, baseurl, profiles, provider_cls, **kwargs):
+    def __init__(self, as_args, baseurl, profile_desc, provider_cls, flows,
+                 order, headlines, profile='', **kwargs):
         self._db = {}
         self.as_args = as_args
         self.base_url = baseurl
-        self.profile = profiles
+        self.profile = profile
         self.provider_cls = provider_cls
+        self.flows = flows
+        self.order = order
+        self.headlines = headlines
 
+        self.profile_desc = profile_desc
         self.profiles = ['default']
-        self.profiles.extend(list(profiles.keys()))
+        self.profiles.extend(list(profile_desc.keys()))
         self.profiles.append('custom')
         self.data = kwargs
 
@@ -39,11 +45,16 @@ class Instances(object):
         _conv.data = self.data
         op.trace = _conv.trace
 
+        sh = SessionHandler(flows=self.flows, order=self.order)
+        sh.init_session(self.profile)
+
         self._db[sid] = {
             'op': op,
             'conv': _conv,
             'ts': time.time(),
-            'selected': {}
+            'selected': {},
+            'session_handler': sh,
+            'headlines': self.headlines
         }
 
         return sid
@@ -53,4 +64,3 @@ class Instances(object):
 
     def __setitem__(self, key, value):
         self._db[key] = value
-

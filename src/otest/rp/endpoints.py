@@ -1,4 +1,6 @@
 import logging
+import mimetypes
+
 from aatest.check import State
 from aatest.check import ERROR
 from aatest.events import EV_CONDITION
@@ -42,6 +44,33 @@ def wsgi_wrapper(environ, func, events, **kwargs):
     except Exception as err:
         logger.error("%s" % err)
         raise
+
+
+# noinspection PyUnresolvedReferences
+def static_mime(path, environ, start_response):
+    logger.info("[static]sending: %s" % (path,))
+
+    # Set content-type based on filename extension
+    ext = ""
+    i = path.rfind('.')
+    if i != -1:
+        ext = path[i:].lower()
+    content_type = mimetypes.types_map.get(ext, None)
+
+    try:
+        if not content_type.startswith('image/'):
+            data = open(path, 'r').read()
+        else:
+            data = open(path, 'rb')
+        resp = Response(data, content=content_type)
+        return resp(environ, start_response)
+    except IOError:
+        _dir = os.getcwd()
+        resp = NotFound("{} not in {}".format(path, _dir))
+    except Exception as err:
+        resp = NotFound('{}'.format(err))
+
+    return resp(environ, start_response)
 
 
 # noinspection PyUnresolvedReferences
