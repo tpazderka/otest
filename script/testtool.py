@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import importlib
-import os
+from json import loads
 import logging
 import re
 import sys
@@ -388,6 +388,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', dest='cwd')
     parser.add_argument('-O', dest='op_profiles', action='append')
     parser.add_argument('-P', dest='profile')
+    parser.add_argument('-t', dest='tests')
+    parser.add_argument('-P', dest='profiles')
+    parser.add_argument('-s', dest='tls', action='store_true')
     parser.add_argument(dest="config")
     args = parser.parse_args()
 
@@ -401,6 +404,10 @@ if __name__ == '__main__':
     as_args, op_arg, config = main_setup(args, LOOKUP, config)
 
     _base = "{base}:{port}/".format(base=config.baseurl, port=args.port)
+
+    _instances = Instances(as_args, _base, op_arg['profiles'],
+                           tool_args['provider'],
+                           uri_schemes=op_arg['uri_schemes'])
 
     session_opts = {
         'session.type': 'memory',
@@ -444,14 +451,14 @@ if __name__ == '__main__':
         current_dir = os.getcwd()
 
     WA = WebApplication(testspecs, tool_args['configuration_response'], _urls,
-                        LOOKUP, {}, _instances, current_dir=current_dir)
+                        LOOKUP, {}, current_dir=current_dir)
 
     # Initiate the web server
     SRV = wsgiserver.CherryPyWSGIServer(
         ('0.0.0.0', int(args.port)),
         SessionMiddleware(WA.application, session_opts))
 
-    if _base.startswith("https"):
+    if args.tls:
         from cherrypy.wsgiserver.ssl_builtin import BuiltinSSLAdapter
 
         SRV.ssl_adapter = BuiltinSSLAdapter(config.SERVER_CERT,

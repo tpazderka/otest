@@ -50,4 +50,5 @@ setup(
         'cherrypy'
     ],
     zip_safe=False,
+    scripts=['script/testtool.py']
 )
