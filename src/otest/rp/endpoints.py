@@ -1,5 +1,6 @@
 import logging
 import mimetypes
+import os
 
 from aatest.check import State
 from aatest.check import ERROR
