@@ -157,9 +157,6 @@ class Application(object):
             return static_mime("static/robots.txt", environ, start_response)
         elif path.startswith("static/"):
             return static_mime(path, environ, start_response)
-        elif path == 'test_info':
-            resp = Response(self.events.to_html())
-            return resp(environ, start_response)
         elif path == "list":
             try:
                 qs = parse_qs(get_post(environ))
@@ -221,7 +218,7 @@ class Application(object):
             pass
         else:
             if _path.startswith("static/"):
-                return static_mime(path, environ, start_response)
+                return static_mime(_path, environ, start_response)
 
             try:
                 _sh = self.session_conf[sid]
