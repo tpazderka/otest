@@ -103,7 +103,7 @@ class WebTester(tool.Tester):
             funcs = {}
 
         logger.info("<--<-- {} --- {} -->-->".format(index, cls))
-        self.conv.events.store('operation', cls, sender='run_flow')
+        self.conv.events.store('operation', cls.__name__, sender='run_flow')
         try:
             _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                         profile=self.profile, test_id=test_id,
