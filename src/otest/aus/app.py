@@ -114,11 +114,21 @@ class WebApplication(object):
         elif path in sh["flow_names"]:
             resp = tester.run(path, **self.webenv)
             session['session_info'] = inut.session
-            if resp:
+
+            if resp is False or resp is True:
+                pass
+            elif resp:
                 return resp
-            else:
-                resp = SeeOther("/display#{}".format(self.pick_grp(path)))
+
+            try:
+                #return inut.flow_list()
+                resp = SeeOther(
+                    "/display#{}".format(
+                        self.pick_grp(path)))
                 return resp(environ, start_response)
+            except Exception as err:
+                logger.error(err)
+                raise
         elif path in ["authz_cb", "authz_post"]:
             if path == "authz_cb":
                 _conv = sh["conv"]
