@@ -14,12 +14,13 @@ from oic.exception import IssuerMismatch
 from oic.exception import PyoidcError
 from oic.oauth2 import ErrorResponse, Message
 from oic.oauth2 import ResponseError
-from oic.oauth2.util import URL_ENCODED, JSON_ENCODED
+from oic.oauth2.util import URL_ENCODED
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import get_post
 
-from aatest import Break, Unknown
+from aatest import Break
 from aatest import operation
+from aatest import Unknown
 from aatest.operation import Operation
 from aatest.log import Log
 from aatest.events import EV_HTTP_RESPONSE
@@ -64,12 +65,17 @@ class Request(Operation):
         return response
 
     def map_profile(self, profile_map):
+        if '.' in self.profile:
+            _rt = self.profile.split('.')[RESPONSE]
+        else:
+            _rt = self.profile[RESPONSE]
+
         try:
-            items = profile_map[self.__class__][self.profile[RESPONSE]].items()
+            item = profile_map[self.__class__][_rt]
         except KeyError:
             pass
         else:
-            for func, arg in items:
+            for func, arg in item.items():
                 func(self, arg)
 
 
