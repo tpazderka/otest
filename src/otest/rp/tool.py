@@ -5,7 +5,9 @@ from aatest import exception_trace, ConfigurationError, ConditionError
 from aatest import tool
 from aatest.check import OK
 from aatest.check import State
-from aatest.events import EV_CONDITION, EV_REQUEST, EV_PROTOCOL_REQUEST
+from aatest.events import EV_CONDITION
+from aatest.events import EV_PROTOCOL_REQUEST
+from aatest.events import EV_REQUEST
 from aatest.events import EV_RESPONSE
 from aatest.result import Result
 from aatest.result import safe_path
@@ -14,6 +16,7 @@ from aatest.summation import store_test_state
 from aatest.verify import Verify
 from future.backports.urllib.parse import parse_qs
 from oic.utils.http_util import Redirect
+from oic.utils.http_util import SeeOther
 from oic.utils.http_util import Response
 from otest.conversation import Conversation
 
@@ -34,7 +37,7 @@ class WebTester(tool.Tester):
         _pname = '_'.join(self.profile)
         try:
             return safe_path(self.conv.entity_id, _pname, test_id)
-        except KeyError:
+        except (AttributeError, KeyError):
             return safe_path('dummy', _pname, test_id)
 
     def match_profile(self, test_id, **kwargs):
@@ -52,7 +55,7 @@ class WebTester(tool.Tester):
         self.sh.session_setup(path=test_id)
         _flow = self.flows[test_id]
         try:
-            _cap = kw_args['op_profiles'][self.sh['test_conf']['profile'][0]]
+            _cap = kw_args['op_profiles'][self.sh['test_conf']['profile']]
         except KeyError:
             _cap = None
         _ent = self.provider_cls(capabilities=_cap, **kw_args['as_args'])
@@ -65,6 +68,7 @@ class WebTester(tool.Tester):
                                  trace_cls=self.trace_cls)
         self.conv.sequence = self.sh["sequence"]
         _ent.conv = self.conv
+        _ent.trace = self.conv.trace
         self.sh["conv"] = self.conv
         return True
 
@@ -78,6 +82,33 @@ class WebTester(tool.Tester):
         except Exception as err:
             exception_trace("", err, logger)
             return self.inut.err_response("run", err)
+
+    def post_op(self, oper, res, test_id):
+        """
+        should be done as late as possible, so all processing has been
+        :param oper:
+        :return:
+        """
+        try:
+            oper.post_tests()
+        except ConditionError:
+            pass
+
+        self.conv.events.store(EV_CONDITION, State('Done', OK))
+        store_test_state(self.sh, self.conv.events)
+        res.store_test_info()
+        res.print_info(test_id, self.fname(test_id))
+
+    def get_cls_and_func(self, index):
+        item = self.conv.sequence[index]
+
+        if isinstance(item, tuple):
+            cls, funcs = item
+        else:
+            cls = item
+            funcs = {}
+
+        return cls, funcs
 
     def run_item(self, test_id, index, profiles=None, **kw_args):
         logger.info("<=<=<=<=< %s >=>=>=>=>" % test_id)
@@ -94,13 +125,7 @@ class WebTester(tool.Tester):
         if index >= len(self.conv.sequence):
             return None
 
-        item = self.conv.sequence[index]
-
-        if isinstance(item, tuple):
-            cls, funcs = item
-        else:
-            cls = item
-            funcs = {}
+        cls, funcs = self.get_cls_and_func(index)
 
         logger.info("<--<-- {} --- {} -->-->".format(index, cls))
         self.conv.events.store('operation', cls, sender='run_flow')
@@ -127,10 +152,13 @@ class WebTester(tool.Tester):
             return self.inut.err_response("run_sequence", err)
         else:
             if isinstance(resp, self.response_cls):
+                if self.conv.sequence[index+1] == Done:
+                    self.post_op(_oper, res, test_id)
                 return resp
 
             if resp:
-                #return self.inut.respond(resp)
+                if self.conv.sequence[index+1] == Done:
+                    self.post_op(_oper, res, test_id)
                 return resp
 
         # should be done as late as possible, so all processing has been
@@ -144,16 +172,6 @@ class WebTester(tool.Tester):
             return False
 
         _ss['index'] = self.conv.index = index + 1
-
-        # try:
-        #     if self.conv.flow["assert"]:
-        #         _ver = Verify(self.chk_factory, self.conv)
-        #         _ver.test_sequence(self.conv.flow["assert"])
-        # except KeyError:
-        #     pass
-        # except Exception as err:
-        #     logger.error(err)
-        #     raise
 
         return True
 
@@ -192,7 +210,7 @@ class WebTester(tool.Tester):
             if msg:
                 self.conv.events.store(EV_PROTOCOL_REQUEST, msg)
 
-    def do_config(self, sid=''):
+    def do_config(self, sid='', start_page='', params='', **args):
         resp = Response(mako_template="config.mako",
                         template_lookup=self.kwargs['lookup'], headers=[])
 
@@ -202,8 +220,8 @@ class WebTester(tool.Tester):
             _url = self.base_url
 
         kwargs = {
-            'start_page': '',
-            'params': '',
+            'start_page': start_page,
+            'params': params,
             'issuer': _url,
             'profiles': self.kwargs['op_profiles'].keys(),
             'selected': self.selected
@@ -214,6 +232,11 @@ class WebTester(tool.Tester):
         sh = self.sh
 
         self.conv = sh['conv']
+        cls, funcs = self.get_cls_and_func(self.conv.index+1)
+        if cls.endpoint != path:
+            if path == 'authorization':  # redirect to starting point
+                return SeeOther(self.base_url)
+
         self.handle_request(req, path)
 
         store_test_state(sh, sh['conv'].events)
@@ -250,7 +273,7 @@ class WebTester(tool.Tester):
             store_test_state(sh, sh['conv'].events)
             res.store_test_info()
 
-        return self.inut.flow_list(filename)
+        return self.inut.flow_list()
 
     def get_response(self, resp):
         try:
