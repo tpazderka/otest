@@ -3,6 +3,7 @@ from aatest.events import EV_REDIRECT_URL
 from aatest.events import EV_HTTP_RESPONSE
 from aatest.operation import Operation
 from aatest.verify import Verify
+from oic.oauth2.message import Message
 from oic.utils import http_util
 
 __author__ = 'roland'
@@ -10,6 +11,7 @@ __author__ = 'roland'
 
 class Response(Operation):
     endpoint = ''
+    message_cls = Message
 
     def __init__(self, conv, inut, sh, **kwargs):
         Operation.__init__(self, conv, inut, sh, **kwargs)

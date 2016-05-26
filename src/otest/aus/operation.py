@@ -10,6 +10,7 @@ from Cryptodome.PublicKey import RSA
 from future.backports.urllib.parse import urlparse
 
 from jwkest.jwk import RSAKey
+from oic.oauth2.message import Message
 
 from oic.utils.keyio import KeyBundle
 from oic.utils.keyio import ec_init
@@ -58,6 +59,8 @@ def get_id_token(responses):
 
 
 class Operation(operation.Operation):
+    message_cls = Message
+
     def __init__(self, conv, inut, sh, test_id='', conf=None,
                  funcs=None, check_factory=None, cache=None, profile=''):
         operation.Operation.__init__(self, conv, inut, sh, test_id,

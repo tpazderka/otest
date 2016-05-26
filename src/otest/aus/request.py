@@ -12,8 +12,9 @@ from requests.models import Response
 
 from oic.exception import IssuerMismatch
 from oic.exception import PyoidcError
-from oic.oauth2 import ErrorResponse, Message
 from oic.oauth2 import ResponseError
+from oic.oauth2.message import ErrorResponse
+from oic.oauth2.message import Message
 from oic.oauth2.util import URL_ENCODED
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import get_post
@@ -21,7 +22,6 @@ from oic.utils.http_util import get_post
 from aatest import Break
 from aatest import operation
 from aatest import Unknown
-from aatest.operation import Operation
 from aatest.log import Log
 from aatest.events import EV_HTTP_RESPONSE
 from aatest.events import EV_PROTOCOL_RESPONSE
@@ -38,6 +38,10 @@ DUMMY_URL = "https://remove.this.url/"
 
 class ParameterError(Exception):
     pass
+
+
+class Operation(operation.Operation):
+    message_cls = Message
 
 
 class Request(Operation):
