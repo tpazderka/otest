@@ -3,20 +3,47 @@ import json
 import sys
 import requests
 
-#from urllib.parse import urlparse
 from future.backports.urllib.parse import urlparse
 
 from aatest.check import Check
 from aatest.check import ERROR
 from aatest.check import WARNING
 from aatest.events import EV_PROTOCOL_REQUEST
+from aatest.events import NoSuchEvent
 from aatest.shannon_entropy import calculate
 
 from oic.oauth2 import AuthorizationRequest
 from oic.oauth2 import AccessTokenRequest
 from oic.extension.client import RegistrationRequest
+from oic.oic import message
 
 __author__ = 'roland'
+
+
+def get_message(conv, classes):
+    for msg_cls in classes:
+        try:
+            request = conv.events.get_message(EV_PROTOCOL_REQUEST, msg_cls)
+        except NoSuchEvent:
+            pass
+        else:
+            return request
+
+    raise NoSuchEvent(classes)
+
+
+def registration_request(conv):
+    return get_message(conv, [RegistrationRequest, message.RegistrationRequest])
+
+
+def authorization_request(conv):
+    return get_message(conv, [AuthorizationRequest,
+                              message.AuthorizationRequest])
+
+
+def access_token_request(conv):
+    return get_message(conv, [AccessTokenRequest,
+                              message.AccessTokenRequest])
 
 
 class VerifyRegistrationOfflineAccess(Check):
@@ -24,20 +51,22 @@ class VerifyRegistrationOfflineAccess(Check):
     msg = "Check if offline access is requested"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          RegistrationRequest)
-
-        # 'offline_access only allow if response_type == 'code'
         try:
-            req_scope = request['scope']
-        except KeyError:
-            pass
+            request = registration_request(conv)
+        except NoSuchEvent:
+            self._status = ERROR
         else:
-            if 'offline_access' in req_scope:
-                if request['response_type'] != 'code':
-                    self._status = ERROR
-                    self._message = 'Offline access not allowed for anything ' \
-                                    'but code flow'
+            # 'offline_access only allow if response_type == 'code'
+            try:
+                req_scope = request['scope']
+            except KeyError:
+                pass
+            else:
+                if 'offline_access' in req_scope:
+                    if request['response_type'] != 'code':
+                        self._status = ERROR
+                        self._message = 'Offline access not allowed for ' \
+                                        'anything but code flow'
 
         return {}
 
@@ -47,20 +76,32 @@ class VerifyRegistrationResponseTypes(Check):
     msg = "Only one of 'code' or 'token' allowed"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          RegistrationRequest)
-
         try:
-            resp_types = request['response_types']
-        except KeyError:
-            pass
+            request = registration_request(conv)
+        except NoSuchEvent:
+            self._status = ERROR
         else:
-            if len(resp_types) > 1:
-                self._status = WARNING
-                self._message = 'Only allowed to register one response type'
-            elif resp_types[0] not in ['code', 'token']:
-                self._status = ERROR
-                self._message = 'Not allowed response type'
+            try:
+                resp_types = request['response_types']
+            except KeyError:
+                pass
+            else:
+                try:
+                    _allowed = self._kwargs['allowed']
+                except KeyError:
+                    if len(resp_types) > 1:
+                        self._status = WARNING
+                        self._message = 'Only allowed to register one response type'
+                    elif resp_types[0] not in ['code', 'token']:
+                        self._status = ERROR
+                        self._message = 'Not allowed response type'
+                else:
+                    if not set(resp_types).issubset(set(_allowed)):
+                        self._status = ERROR
+                        self._message = \
+                            'Asked for response_types not subset of {}'.format(
+                                _allowed
+                            )
 
         return {}
 
@@ -70,26 +111,28 @@ class VerifyRegistrationSoftwareStatement(Check):
     msg = "Verify that the correct claims appear in the Software statement"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          RegistrationRequest)
-
         try:
-            _ss = request['software_statement']
-        except KeyError:
-            pass
+            request = registration_request(conv)
+        except NoSuchEvent:
+            self._status = ERROR
         else:
-            missing = []
-            for claim in ['redirect_uris', 'grant_types', 'client_name',
-                          'client_uri']:
-                if claim not in _ss:
-                    missing.append(claim)
-            if 'jwks_uri' not in _ss and 'jwks' not in _ss:
-                missing.append('jwks_uri/jwks')
+            try:
+                _ss = request['software_statement']
+            except KeyError:
+                pass
+            else:
+                missing = []
+                for claim in ['redirect_uris', 'grant_types', 'client_name',
+                              'client_uri']:
+                    if claim not in _ss:
+                        missing.append(claim)
+                if 'jwks_uri' not in _ss and 'jwks' not in _ss:
+                    missing.append('jwks_uri/jwks')
 
-            if missing:
-                self._status = WARNING
-                self._message = 'Missing "{}" claims from Software ' \
-                                'Statement'.format(missing)
+                if missing:
+                    self._status = WARNING
+                    self._message = 'Missing "{}" claims from Software ' \
+                                    'Statement'.format(missing)
 
         return {}
 
@@ -99,35 +142,38 @@ class VerifyRegistrationRedirectUriScheme(Check):
     msg = "Only certain redirect_uri schemes are allowed"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          RegistrationRequest)
-
         try:
-            ruris = request['redirect_uris']
-        except KeyError:
+            request = registration_request(conv)
+        except NoSuchEvent:
             self._status = ERROR
-            self._message = 'MUST register redirect_uris'
         else:
-            for ruri in ruris:
-                p = urlparse(ruri)
-                if p.scheme == 'https':
-                    continue
-                elif p.scheme == 'http':
-                    if 'localhost' != p.netloc.split('.'):
-                        self._status = ERROR
-                        self._message = 'Not allowed response type'
-                        break
-                else:  # How do I check for local schemes ?
-                    try:
-                        uri_scheme = conv.data['uri_schemes']
-                    except KeyError:
-                        pass
-                    else:
-                        for scheme, desc in uri_scheme.items():
-                            if p.scheme == scheme:
-                                self._status = WARNING
-                                self._message = "None local URI scheme: {" \
-                                                "}".format(scheme)
+            try:
+                ruris = request['redirect_uris']
+            except KeyError:
+                self._status = ERROR
+                self._message = 'MUST register redirect_uris'
+            else:
+                for ruri in ruris:
+                    p = urlparse(ruri)
+                    if p.scheme == 'https':
+                        continue
+                    elif p.scheme == 'http':
+                        if 'localhost' != p.netloc.split('.'):
+                            self._status = ERROR
+                            self._message = 'Not allowed response type'
+                            break
+                    else:  # How do I check for local schemes ?
+                        try:
+                            uri_scheme = conv.data['uri_schemes']
+                        except KeyError:
+                            pass
+                        else:
+                            for scheme, desc in uri_scheme.items():
+                                if p.scheme == scheme:
+                                    self._status = WARNING
+                                    self._message = \
+                                        "None-local URI scheme: {}".format(
+                                            scheme)
                                 break
 
         return {}
@@ -138,63 +184,44 @@ class VerifyRegistrationPublicKeyRegistration(Check):
     msg = "Public key must be registered"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          RegistrationRequest)
-
         try:
-            _uri = request['jwks_uri']
-        except KeyError:
-            try:
-                jwks = request['jwks']
-            except KeyError:
-                self._status = ERROR
-                self._message = 'Must register a public key'
-            else:
-                pub = 0
-                for desc in jwks['keys']:
-                    if desc['kty'] in ['RSA', 'EC']:
-                        pub += 1
-                if pub == 0:
-                    self._status = ERROR
-                    self._message = 'Must register a public key'
+            request = registration_request(conv)
+        except NoSuchEvent:
+            self._status = ERROR
         else:
-            resp = requests.request('GET', _uri, verify=False)
-            if resp.status_code == 200:
-                jwks = json.loads(resp.text)
-                pub = 0
-                for desc in jwks['keys']:
-                    if desc['kty'] in ['RSA', 'EC']:
-                        pub += 1
-                if pub == 0:
+            try:
+                _uri = request['jwks_uri']
+            except KeyError:
+                try:
+                    jwks = request['jwks']
+                except KeyError:
                     self._status = ERROR
                     self._message = 'Must register a public key'
+                else:
+                    pub = 0
+                    for desc in jwks['keys']:
+                        if desc['kty'] in ['RSA', 'EC']:
+                            pub += 1
+                    if pub == 0:
+                        self._status = ERROR
+                        self._message = 'Must register a public key'
             else:
-                self._status = ERROR
-                self._message = 'Failed to access the RP keys at {}'.format(
-                    _uri)
+                resp = requests.request('GET', _uri, verify=False)
+                if resp.status_code == 200:
+                    jwks = json.loads(resp.text)
+                    pub = 0
+                    for desc in jwks['keys']:
+                        if desc['kty'] in ['RSA', 'EC']:
+                            pub += 1
+                    if pub == 0:
+                        self._status = ERROR
+                        self._message = 'Must register a public key'
+                else:
+                    self._status = ERROR
+                    self._message = 'Failed to access the RP keys at {}'.format(
+                        _uri)
 
         return {}
-
-
-# class VerifyRegistrationArguments(Check):
-#     cid = 'verify-registration-arguments'
-#     msg = "Verify registration parameters"
-#
-#     def _func(self, conv):
-#         request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-#                                           RegistrationRequest)
-#
-#         for key, val in self._kwargs.items():
-#             if val:
-#
-#             else:
-#                 if key not in request:
-#                     self._status = WARNING
-#                     self._message = 'Missing "{}" argument in
-# request'.format(missing)
-#
-#
-#         return {}
 
 
 class VerifyAuthorizationOfflineAccess(Check):
@@ -202,18 +229,20 @@ class VerifyAuthorizationOfflineAccess(Check):
     msg = "Check if offline access is requested"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          AuthorizationRequest)
-
         try:
-            req_scopes = request['scope']
-        except KeyError:
-            pass
+            request = registration_request(conv)
+        except NoSuchEvent:
+            self._status = ERROR
         else:
-            if 'offline_access' in req_scopes:
-                if request['response_type'] != ['code']:
-                    self._status = ERROR
-                    self._message = 'Offline access only when using "code" flow'
+            try:
+                req_scopes = request['scope']
+            except KeyError:
+                pass
+            else:
+                if 'offline_access' in req_scopes:
+                    if request['response_type'] != ['code']:
+                        self._status = ERROR
+                        self._message = 'Offline access only when using "code" flow'
 
         return {}
 
@@ -223,8 +252,7 @@ class VerifyAuthorizationStateEntropy(Check):
     msg = "Check if offline access is requested"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          AuthorizationRequest)
+        request = authorization_request(conv)
 
         bits = calculate(request['state'])
         if bits < 128:
@@ -239,14 +267,16 @@ class VerifyAuthorizationRedirectUri(Check):
     msg = "Check if offline access is requested"
 
     def _func(self, conv):
-        clireq_request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                                 RegistrationRequest)
-        authz_request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                                AuthorizationRequest)
-
-        if authz_request['redirect_uri'] not in clireq_request['redirect_uris']:
+        try:
+            clireq_request = registration_request(conv)
+        except NoSuchEvent:
             self._status = ERROR
-            self._message = 'Redirect_uri not registered'
+        else:
+            authz_request = authorization_request(conv)
+
+            if authz_request['redirect_uri'] not in clireq_request['redirect_uris']:
+                self._status = ERROR
+                self._message = 'Redirect_uri not registered'
 
         return {}
 
@@ -256,8 +286,7 @@ class VerifyTokenRequestClientAssertion(Check):
     msg = "Check that the client_assertion JWT contains expected claims"
 
     def _func(self, conv):
-        request = conv.events.get_message(EV_PROTOCOL_REQUEST,
-                                          AccessTokenRequest)
+        request = access_token_request(conv)
 
         ca = request['parsed_client_assertion']
         missing = []
