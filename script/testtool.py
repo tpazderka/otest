@@ -1,42 +1,44 @@
-#!/usr/bin/env python
-
 import importlib
-from json import loads
+import json
 import logging
-import re
+import os
 import sys
-import requests
 import traceback
-from json import loads
+
+from os import listdir
+from os.path import isdir
+from os.path import isfile
+from os.path import join
+
+import requests
+from aatest import Trace
+from aatest.events import Events
+from aatest.events import EV_REQUEST
+from aatest.events import EV_RESPONSE
+from aatest.parse_cnf import parse_yaml_conf
+from aatest.session import SessionHandler
 
 from future.backports.urllib.parse import parse_qs
-from future.backports.urllib.parse import urlencode
-from future.backports.urllib.parse import urlparse
 
 from mako.lookup import TemplateLookup
+from oic import rndstr
+from oic.utils import http_util
 
-from aatest.check import WARNING
-from aatest.events import EV_PROTOCOL_REQUEST
-from aatest.events import NoSuchEvent
-from aatest.summation import eval_state
-from aatest.summation import get_errors
-from aatest.verify import Verify
+from oidctest.rp.prof_util import ProfileHandler
+from otest.rp.endpoints import static_mime
 
-from oic.oauth2 import ErrorResponse
+from otest.rp.io import WebIO
+from otest.rp.setup import as_arg_setup
+from otest.rp.tool import WebTester
 
-from oic.utils.http_util import NotFound, get_post
-from oic.utils.http_util import SeeOther
-from oic.utils.http_util import ServiceError
+from oic.utils.http_util import extract_from_request
+from oic.utils.http_util import get_or_post
+from oic.utils.http_util import get_post
+from oic.utils.http_util import NotFound
 from oic.utils.http_util import Response
-from oic.utils.http_util import BadRequest
+from oic.utils.http_util import ServiceError
+from oic.utils.http_util import SeeOther
 
-from requests.packages import urllib3
-
-from otest.rp.endpoints import static, static_mime
-from otest.rp.endpoints import add_endpoints
-from otest.rp.instance import Instances
-
-urllib3.disable_warnings()
 
 __author__ = 'roland'
 
@@ -57,406 +59,368 @@ LOOKUP = TemplateLookup(directories=[ROOT + 'htdocs'],
                         input_encoding='utf-8', output_encoding='utf-8')
 
 
-def run_assertions(op_env, test_specs, conversation):
+def css(environ, event_db):
     try:
-        req = conversation.events.last_item(EV_PROTOCOL_REQUEST)
-    except NoSuchEvent:
-        pass
-    else:
-        _ver = Verify(None, conversation)
-        _ver.test_sequence(
-            test_specs[op_env['test_id']][req.__class__.__name__]["assert"])
+        info = open(environ["PATH_INFO"]).read()
+        resp = Response(info)
+    except (OSError, IOError):
+        resp = NotFound(environ["PATH_INFO"])
+
+    return resp
 
 
-def construct_url(op, params, start_page):
-    _params = params
-    _params = _params.replace('<issuer>', op.baseurl)
-    _args = dict([p.split('=') for p in _params.split('&')])
-    return start_page + '?' + urlencode(_args)
-
-
-def connection_error(environ, start_response, err):
-    resp = Response("Connection error: {}".format(err))
+def start_page(environ, start_response, target):
+    msg = open('start_page.html').read().format(target=target)
+    resp = Response(msg)
     return resp(environ, start_response)
 
 
-class WebApplication(object):
-    def __init__(self, test_specs, urls, lookup, op_env,
-                 current_dir, **kwargs):
-        self.test_specs = test_specs
-        self.urls = urls
-        self.lookup = lookup
-        self.op_env = op_env
-        self.current_dir = current_dir
+def make_entity(provider_cls, **as_args):
+    return provider_cls(**as_args)
 
-    # def display_test_list(self):
-    #     try:
-    #         if self.sh.session_init():
-    #             return self.inut.flow_list()
-    #         else:
-    #             try:
-    #                 resp = Redirect("%s/opresult#%s" % (
-    #                     self.inut.conf.BASE, self.sh["testid"][0]))
-    #             except KeyError:
-    #                 return self.inut.flow_list()
-    #             else:
-    #                 return resp(self.inut.environ, self.inut.start_response)
-    #     except Exception as err:
-    #         exception_trace("display_test_list", err)
-    #         return self.inut.err_response("session_setup", err)
 
-    def send_result(self, environ, start_response, rp_resp=None, **kwargs):
-        if rp_resp:
-            if rp_resp.status_code != 200:
-                if rp_resp.text:
-                    result = '{}:{}'.format(rp_resp.status_code, rp_resp.text)
-                else:
-                    result = '{}:{}'.format(rp_resp.status_code, rp_resp.reason)
-            else:
-                result = "200 OK"
-        else:
-            result = ''
+# =============================================================================
 
-        # How to recognize something went wrong ?
-        resp = Response(mako_template="test.mako",
-                        template_lookup=self.lookup, headers=[])
 
-        return resp(environ, start_response, **kwargs)
+class Application(object):
+    def __init__(self, base_url, **kwargs):
+        self.base_url = base_url
+        self.kwargs = kwargs
+        self.events = Events()
+        self.endpoints = {}
+        self.session_conf = {}
 
-    def init_sequence(self, environ, start_response, test_id, sid, info):
-        _op = info['op']
+    def store_response(self, response):
+        self.events.store(EV_RESPONSE, response.info())
 
-        self.op_env['test_id'] = test_id
-        url = construct_url(_op, info['params'], info['start_page'])
+    def wsgi_wrapper(self, environ, func, **kwargs):
+        kwargs = extract_from_request(environ, kwargs)
+        self.events.store(EV_REQUEST, kwargs)
+        args = func(**kwargs)
 
         try:
-            rp_resp = requests.request('GET', url, verify=False)
+            resp, state = args
+            self.store_response(resp)
+            return resp
+        except TypeError:
+            resp = args
+            self.store_response(resp)
+            return resp
         except Exception as err:
-            resp = ServiceError(err)
-            return resp(environ, start_response)
+            logger.error("%s" % err)
+            raise
 
-        return self.send_result(
-            environ, start_response, id=sid,
-            tests=info['tests'], base=_op.baseurl,
-            test_info=info['test_info'], headlines=info['headlines'])
+    def handle(self, environ, tester, sid, path, qs=''):
+        _sh = tester.sh
+        if qs:
+            msg = qs
+        else:
+            try:
+                msg = get_or_post(environ)
+            except AttributeError:
+                msg = {}
 
+        filename = self.kwargs['profile_handler'](_sh).log_path(
+            sid, _sh['conv'].test_id)
+
+        _sh['conv'].entity_id = sid
+        return tester.do_next(msg, filename,
+                              profile_handler=self.kwargs['profile_handler'],
+                              path=path)
+
+    @staticmethod
+    def pick_grp(name):
+        return name.split('-')[1]
+
+    # publishes the OP endpoints
     def application(self, environ, start_response):
-        #  session = environ['beaker.session']
+        logger.info("Connection from: %s" % environ["REMOTE_ADDR"])
+        session = environ['beaker.session']
 
         path = environ.get('PATH_INFO', '').lstrip('/')
+        logger.info("path: %s" % path)
+        self.events.store(EV_REQUEST, path)
 
-        if path == "robots.txt" or path == "favicon.ico":
-            return static_mime(os.path.join(self.current_dir, 'static', path),
-                               environ, start_response)
+        try:
+            sh = session['session_info']
+        except KeyError:
+            sh = SessionHandler(**self.kwargs)
+            sh.session_init()
+            session['session_info'] = sh
+
+        inut = WebIO(session=sh, **self.kwargs)
+        inut.environ = environ
+        inut.start_response = start_response
+
+        tester = WebTester(inut, sh, **self.kwargs)
+
+        if path == "robots.txt":
+            return static_mime("static/robots.txt", environ, start_response)
         elif path.startswith("static/"):
-            return static_mime(os.path.join(self.current_dir, path),
-                               environ, start_response)
+            return static_mime(path, environ, start_response)
+        elif path == "list":
+            try:
+                qs = parse_qs(get_post(environ))
+            except Exception as err:
+                pass
+            else:
+                sh['test_conf'] = dict([(k,v[0]) for k,v in qs.items()])
+                self.session_conf[sh['sid']] = sh
+
+            return tester.display_test_list()
         elif path == '' or path == 'config':
-            sid = self.instances.new_map()
-            self.instances.remove_old()
-            info = self.instances[sid]
-
-            resp = Response(mako_template="config.mako",
-                            template_lookup=self.lookup, headers=[])
-
-            kwargs = {
-                'id': sid,
-                'start_page': '',
-                'params': '',
-                'issuer': info['op'].baseurl,
-                'profiles': self.instances.profiles,
-                'selected': info['selected']
-            }
-            return resp(environ, start_response, **kwargs)
-        elif path == 'cp':
-            qs = parse_qs(environ["QUERY_STRING"])
-            resp = Response(mako_template="profile.mako",
-                            template_lookup=self.lookup, headers=[])
-            specs = loads(open('config_params.json').read())
-            kwargs = {'specs': specs, 'id': qs['id'][0], 'selected': {}}
-            return resp(environ, start_response, **kwargs)
-        elif path == 'profile':
-            qs = parse_qs(environ["QUERY_STRING"])
-            sid = qs['_id_'][0]
-            del qs['_id_']
+            sid = rndstr(24)
+            sh['sid'] = sid
             try:
-                info = self.instances[sid]
+                args = sh['test_conf']
+            except:
+                args = {}
+            return tester.do_config(sid, **args)
+        elif path in self.kwargs['flows'].keys():  # Run flow
+            try:
+                _ = tester.sh['test_conf']
             except KeyError:
-                self.instances.new_map(sid)
-                info = self.instances[sid]
-
-            op = info['op']
-            for key, val in qs.items():
-                if val == ['True']:
-                    qs[key] = True
-                elif val == ['False']:
-                    qs[key] = False
-
-            if op.verify_capabilities(qs):
-                op.capabilities = self.conf_response(**qs)
-            else:
-                # Shouldn't happen
-                resp = ServiceError('Capabilities error')
+                resp = SeeOther('/')
                 return resp(environ, start_response)
-
-            info['selected'] = qs
-
-            self.op_env['test_id'] = 'default'
-            url = construct_url(op, info['params'], info['start_page'])
             try:
-                rp_resp = requests.request('GET', url, verify=False)
-            except Exception as err:
-                return connection_error(environ, start_response, err)
-
-            return self.send_result(
-                environ, start_response, resp=rp_resp, id=sid,
-                tests=info['tests'], base=op.baseurl,
-                test_info=info['test_info'], headlines=info['headlines'])
-        elif path == 'flow':
-            qs = parse_qs(get_post(environ))
-            sid = qs['id'][0]
-            try:
-                info = self.instances[sid]
+                _sid = tester.sh['sid']
             except KeyError:
-                self.instances.new_map(sid)
-                info = self.instances[sid]
+                _sid = rndstr(24)
+                tester.sh['sid'] = _sid
+                self.session_conf[_sid] = sh
 
-            _op = info['op']
-
-            _prof = qs['profile'][0]
-            for p in ['start_page', 'params', 'profile']:
-                info[p] = qs[p][0]
-
-            if _prof == 'custom':
-                self.instances[sid] = info
-                resp = SeeOther('/cp?id={}'.format(sid))
-                return resp(environ, start_response)
-            elif _prof != 'default':
-                if _op.verify_capabilities(self.instances.profile_desc[_prof]):
-                    _op.capabilities = self.conf_response(
-                        **self.instances.profile_desc[_prof])
+            resp = tester.run(path, sid=_sid, **self.kwargs)
+            if isinstance(resp, requests.Response):
+                loc = resp.headers['location']
+                #tester.conv.events.store('Cookie', resp.headers['set-cookie'])
+                if loc.startswith(tester.base_url):
+                    path = loc[len(tester.base_url):]
                 else:
-                    # Shouldn't happen
-                    resp = ServiceError('Capabilities error')
-                    return resp(environ, start_response)
-
-            return self.send_result(
-                environ, start_response, id=sid, base=_op.baseurl,
-                tests=info['session_handler']['tests'],
-                test_info=info['session_handler']['test_info'],
-                headlines=info['headlines'])
-
-        # elif path in self.kwargs['flows'].keys():  # Run flow
-        #     resp = tester.run(path, **self.kwargs)
-        #     if resp is True or resp is False:
-        #         return tester.display_test_list()
-        #     else:
-        #         return resp(environ, start_response)
-        # elif path == 'all':
-        #     for test_id in sh['flow_names']:
-        #         resp = tester.run(test_id, **self.kwargs)
-        #         if resp is True or resp is False:
-        #             continue
-        #         elif resp:
-        #             return resp(environ, start_response)
-        #         else:
-        #             resp = ServiceError('Unkown service error')
-        #             return resp(environ, start_response)
-        #     return tester.display_test_list()
-        elif path == 'rp':
-            qs = parse_qs(environ["QUERY_STRING"])
-
-            # Modify the OP configuration
-            # if 'setup' in testspecs[tid] and testspecs[tid]['setup']:
-            #     for func, args in testspecs[tid]['setup'].items():
-            #         func(_op, args)
-            sid = qs['id'][0]
-            try:
-                info = self.instances[sid]
-            except KeyError:
-                self.instances.new_map(sid)
-                info = self.instances[sid]
-
-            _conv = info['conv']
-            _op = info['op']
-
-            _prof = qs['profile'][0]
-            if _prof == 'custom':
-                info['start_page'] = qs['start_page'][0]
-                info['params'] = qs['params'][0]
-                self.instances[sid] = info
-                resp = SeeOther('/cp?id={}'.format(sid))
-                return resp(environ, start_response)
-            elif _prof != 'default':
-                if _op.verify_capabilities(self.instances.profile_desc[_prof]):
-                    _op.capabilities = self.conf_response(
-                        **self.instances.profile_desc[_prof])
-                else:
-                    # Shouldn't happen
-                    resp = ServiceError('Capabilities error')
-                    return resp(environ, start_response)
-
-            self.op_env['test_id'] = 'default'
-            url = construct_url(_op, qs['params'][0], qs['start_page'][0])
-
-            try:
-                rp_resp = requests.request('GET', url, verify=False)
-            except Exception as err:
-                resp = ServiceError(err)
-                return resp(environ, start_response)
-
-            return self.send_result(
-                environ, start_response, id=sid,
-                tests=info['tests'], base=_op.baseurl,
-                test_info=info['test_info'], headlines=info['headlines'])
-
-        if '/' in path:
-            try:
-                sid, test_id, _path = path.split('/', 2)
-            except ValueError:
-                sid, test_id = path.split('/', 1)
-                _path = ''
-
-            try:
-                info = self.instances[sid]
-            except KeyError:
-                sid = self.instances.new_map(sid)
-                info = self.instances[sid]
-
-            if _path == '':
-                return self.init_sequence(environ, start_response, test_id, sid,
-                                          info)
-            elif _path == "result":
-                return self.send_result(
-                    environ, start_response, id=sid,
-                    tests=info['tests'], base=info['op'].baseurl,
-                    test_info=info['test_info'], headlines=info['headlines'])
-            elif _path == 'reset':
-                self.instances.new_map(sid)
-                resp = Response('Done')
-                return resp(environ, start_response)
+                    return resp
+            elif resp is True or resp is False or resp is None:
+                return tester.display_test_list()
             else:
-                _path = '/'.join([test_id, _path])
+                return resp(environ, start_response)
+        elif path == 'display':
+            return inut.flow_list()
+        elif path == "opresult":
+            resp = SeeOther(
+                "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
+            return resp(environ, start_response)
+        elif path.startswith("test_info"):
+            p = path.split("/")
+            try:
+                return inut.test_info(p[1])
+            except KeyError:
+                return inut.not_found()
+        elif path == 'all':
+            for test_id in sh['flow_names']:
+                resp = tester.run(test_id, **self.kwargs)
+                if resp is True or resp is False:
+                    continue
+                elif resp:
+                    return resp(environ, start_response)
+                else:
+                    resp = ServiceError('Unkown service error')
+                    return resp(environ, start_response)
+            return tester.display_test_list()
 
-            environ["oic.op"] = info['op']
-            conversation = info['conv']
-            conversation.events.store('path', _path)
+        # Whatever gets here should be of the form <session_id>/<path>
+        try:
+            sid, _path = path.split('/', 1)
+        except ValueError:
+            pass
+        else:
+            if _path.startswith("static/"):
+                return static_mime(_path, environ, start_response)
 
-            for regex, callback in self.urls:
-                match = re.search(regex, _path)
-                if match is not None:
-                    self.op_env['test_id'] = _path
+            try:
+                _sh = self.session_conf[sid]
+            except KeyError:
+                resp = ServiceError("Unknown session")
+                return resp(environ, start_response)
 
-                    logger.info("callback: %s" % callback)
+            tester.sh = _sh
+            if 'HTTP_AUTHORIZATION' in environ:
+                _sh['conv'].events.store('HTTP_AUTHORIZATION',
+                                      environ['HTTP_AUTHORIZATION'])
+            _p = _path.split('?')
+            if _p[0] in _sh['conv'].entity.endpoints():
+                resp = self.handle(environ, tester, sid, *_p)
+                self.session_conf[sid] = tester.sh
+                return resp(environ, start_response)
+
+            for endpoint, service in self.endpoints.items():
+                if _path == endpoint:
+                    logger.info("service: {}".format(service))
                     try:
-                        resp = callback(environ, conversation.events)
-                        # assertion checks
-                        run_assertions(self.op_env, testspecs, conversation)
-                        if eval_state(conversation.events) > WARNING:
-                            err_desc = get_errors(conversation.events)
-                            err_msg = ErrorResponse(error='invalid_request',
-                                                    error_description=err_desc)
-                            resp = BadRequest(err_msg.to_json())
-                            return resp(environ, start_response)
-
+                        resp = self.handle(environ, tester, sid, service)
                         return resp(environ, start_response)
                     except Exception as err:
                         print("%s" % err)
-                        print(traceback.format_exception(*sys.exc_info()))
+                        message = traceback.format_exception(*sys.exc_info())
+                        print(message)
                         logger.exception("%s" % err)
                         resp = ServiceError("%s" % err)
-                        return resp(environ, start_response)
+                        return resp(environ)
 
-        logger.debug("Unknown page: %s" % path)
-        resp = NotFound("Couldn't find the page you asked for!")
+        logger.debug("unknown side: %s" % path)
+        resp = NotFound("Couldn't find the side you asked for!")
         return resp(environ, start_response)
+
+
+def key_handling(key_dir):
+    if isdir(key_dir):
+        only_files = [f for f in listdir(key_dir) if isfile(join(key_dir, f))]
+    else:
+        os.makedirs(key_dir)
+        only_files = []
+
+    if not only_files:
+        only_files = ['one.pem']
+        for fil in only_files:
+            key = RSA.generate(2048)
+            f = open(join(key_dir, fil),'w')
+            f.write(key.exportKey('PEM').decode('utf8'))
+            f.close()
+
+    return {key_dir: only_files}
+
+
+
+# def find_allowed_algorithms(metadata_file, ic):
+#     mds = MetadataStore(ic.attribute_converters, ic,
+#                         disable_ssl_certificate_validation=True)
+#
+#     mds.imp([{
+#         "class": "saml2.mdstore.MetaDataFile",
+#         "metadata": [(metadata_file,)]}])
+#
+#     md = mds.metadata[metadata_file]
+#     ed = list(md.entity.values())[0]
+#     res = {"digest_algorithms":[], "signing_algorithms":[]}
+#
+#     for elem in ed['extensions']['extension_elements']:
+#         if elem['__class__'] == '{}&DigestMethod'.format(algsupport.NAMESPACE):
+#             res['digest_algorithms'].append(elem['algorithm'])
+#         elif elem['__class__'] == '{}&SigningMethod'.format(
+#                 algsupport.NAMESPACE):
+#             res['signing_algorithms'].append(elem['algorithm'])
+#
+#     return res
 
 
 if __name__ == '__main__':
     import argparse
     from beaker.middleware import SessionMiddleware
+    from Cryptodome.PublicKey import RSA
 
     from cherrypy import wsgiserver
     from cherrypy.wsgiserver.ssl_builtin import BuiltinSSLAdapter
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', dest='verbose', action='store_true')
     parser.add_argument('-d', dest='debug', action='store_true')
-    parser.add_argument('-p', dest='port', default=80, type=int)
     parser.add_argument('-k', dest='insecure', action='store_true')
-    parser.add_argument('-t', dest='tests', action='append')
-    parser.add_argument('-c', dest='cwd')
-    parser.add_argument('-O', dest='op_profiles', action='append')
-    parser.add_argument('-P', dest='profile')
-    parser.add_argument('-t', dest='tests')
-    parser.add_argument('-P', dest='profiles')
+    parser.add_argument('-p', dest="profile", action='append')
+    parser.add_argument('-t', dest="target_info")
+    parser.add_argument('-v', dest='verbose', action='store_true')
+    parser.add_argument('-y', dest='yaml_flow', action='append')
+    parser.add_argument('-r', dest='rsa_key_dir', default='keys')
+    parser.add_argument('-m', dest='metadata')
+    parser.add_argument('-w', dest='cwd')
+    parser.add_argument('-P', dest='port')
+    parser.add_argument('-O', dest='op_profiles')
     parser.add_argument('-s', dest='tls', action='store_true')
+    parser.add_argument(
+        '-c', dest="ca_certs",
+        help=("CA certs to use to verify HTTPS server certificates, ",
+              "if HTTPS is used and no server CA certs are defined then ",
+              "no cert verification will be done"))
     parser.add_argument(dest="config")
     args = parser.parse_args()
-
-    sys.path.insert(0, ".")
-    config = importlib.import_module(args.config)
-
-    tool_args = config.TOOL_ARGS
-
-    main_setup = tool_args['setup']
-
-    as_args, op_arg, config = main_setup(args, LOOKUP, config)
-
-    _base = "{base}:{port}/".format(base=config.baseurl, port=args.port)
-
-    _instances = Instances(as_args, _base, op_arg['profiles'],
-                           tool_args['provider'],
-                           uri_schemes=op_arg['uri_schemes'])
 
     session_opts = {
         'session.type': 'memory',
         'session.cookie_expires': True,
         'session.auto': True,
-        'session.key': "{}.beaker.session.id".format(
-            urlparse(_base).netloc.replace(":", "."))
+        # 'session.key': "{}.beaker.session.id".format(
+        #     urlparse(_base).netloc.replace(":", "."))
     }
 
-    # target = config.TARGET.format(quote_plus(_base))
-    # print(target)
+    sys.path.insert(0, ".")
+    config = importlib.import_module(args.config)
 
-    testspecs = {'Flows':{}, 'Order':[], 'Desc': {} }
+    fdef = {'Flows': {}, 'Order': [], 'Desc': {}}
+    for flow_def in args.yaml_flow:
+        spec = parse_yaml_conf(flow_def, config.TOOL_ARGS['cls_factories'],
+                               config.TOOL_ARGS['func_factory'])
+        fdef['Flows'].update(spec['Flows'])
+        fdef['Desc'].update(spec['Desc'])
+        fdef['Order'].extend(spec['Order'])
 
-    for t in args.tests:
-        f = tool_args['parse_conf'](
-            t, cls_factories=tool_args['cls_factories'],
-            func_factory=tool_args['func_factory'])
-        for p in ['Flows', 'Desc']:
-            testspecs[p].update(f[p])
-        testspecs['Order'].extend(f['Order'])
+    # Filter based on profile
+    keep = []
+    for key, val in fdef['Flows'].items():
+        for p in args.profile:
+            if p in val['profiles']:
+                keep.append(key)
 
-    _urls = add_endpoints(tool_args['endpoints'], tool_args['urls'])
+    for key in list(fdef['Flows'].keys()):
+        if key not in keep:
+            del fdef['Flows'][key]
 
-    _dir = "./"
-    LOOKUP = TemplateLookup(directories=[_dir + 'templates', _dir + 'htdocs'],
-                            module_directory=_dir + 'modules',
-                            input_encoding='utf-8',
-                            output_encoding='utf-8')
+    # Create necessary keys if I don't already have them
+    keys = key_handling('keys')
 
-    _instances = Instances(as_args, _base, op_arg['profiles'],
-                           tool_args['provider'],
-                           profile=args.profile,
-                           uri_schemes=op_arg['uri_schemes'],
-                           flows=testspecs['Flows'],
-                           order=testspecs['Order'],
-                           headlines=testspecs['Desc'])
-    if args.cwd:
-        current_dir = args.cwd
+    if args.insecure:
+        disable_validation = True
     else:
-        current_dir = os.getcwd()
+        disable_validation = False
 
-    WA = WebApplication(testspecs, tool_args['configuration_response'], _urls,
-                        LOOKUP, {}, current_dir=current_dir)
+    if args.cwd:
+        base_dir = args.cwd
+    else:
+        base_dir = os.getcwd()
+
+    if args.port:
+        _port = args.port
+    else:
+        if args.tls:
+            _port = 443
+        else:
+            _port = 80
+
+    _base = "{base}:{port}/".format(base=config.baseurl, port=_port)
+
+    as_args, key_args = as_arg_setup(args, lookup=LOOKUP, config=config)
+
+    _op_profiles = json.load(open(args.op_profiles))
+
+    kwargs = {"base_url": _base, "test_specs": fdef,
+              'flows': fdef['Flows'], 'order': fdef['Order'],
+              "profile": args.profile, 'desc': fdef['Desc'],
+              "msg_factory": config.TOOL_ARGS['cls_factories'],
+              "check_factory": config.TOOL_ARGS['chk_factory'],
+              'conf': config, "cache": {}, 'op_profiles': _op_profiles,
+              "profile_handler": ProfileHandler, 'map_prof': None,
+              'trace_cls': Trace, 'lookup': LOOKUP,
+              'make_entity': make_entity, 'base_dir': base_dir,
+              'signing_key': keys, 'provider_cls': config.TOOL_ARGS['provider'],
+              'as_args': as_args, 'response_cls': http_util.Response
+              }
+
+    if args.ca_certs:
+        kwargs['ca_certs'] = args.ca_certs
+
+    _app = Application(base=_base, **kwargs)
+    _app.endpoints = {
+        '.well-known/openid-configuration': 'providerinfo_endpoint'
+    }
 
     # Initiate the web server
     SRV = wsgiserver.CherryPyWSGIServer(
-        ('0.0.0.0', int(args.port)),
-        SessionMiddleware(WA.application, session_opts))
+        ('0.0.0.0', int(_port)),
+        SessionMiddleware(_app.application, session_opts))
 
     if args.tls:
         from cherrypy.wsgiserver.ssl_builtin import BuiltinSSLAdapter
@@ -464,11 +428,11 @@ if __name__ == '__main__':
         SRV.ssl_adapter = BuiltinSSLAdapter(config.SERVER_CERT,
                                             config.SERVER_KEY,
                                             config.CERT_CHAIN)
-        extra = " using SSL/TLS"
+        extra = "using SSL/TLS"
     else:
         extra = ""
 
-    txt = "RP test tool started. Listening on port:%s%s" % (args.port, extra)
+    txt = "RP test tool started {}.".format(extra)
     logger.info(txt)
     print(txt)
 
