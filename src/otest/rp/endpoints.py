@@ -62,7 +62,7 @@ def static_mime(path, environ, start_response):
         if not content_type.startswith('image/'):
             data = open(path, 'r').read()
         else:
-            data = open(path, 'rb')
+            data = open(path, 'rb').read()
         resp = Response(data, content=content_type)
         return resp(environ, start_response)
     except IOError:
