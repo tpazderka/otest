@@ -8,7 +8,6 @@ from aatest.check import OK
 from aatest.check import WARNING
 from aatest.check import INCOMPLETE
 from aatest.io import IO
-from saml2test.idp_test.inut import get_test_info
 
 __author__ = 'roland'
 
@@ -16,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
                 INCOMPLETE: "INCOMPLETE"}
+
+def get_test_info(session, test_id):
+    return session["test_info"][test_id]
 
 
 class WebIO(IO):
