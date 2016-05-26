@@ -320,22 +320,26 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', dest='debug', action='store_true')
-    parser.add_argument('-k', dest='insecure', action='store_true')
-    parser.add_argument('-p', dest="profile", action='append')
-    parser.add_argument('-t', dest="target_info")
-    parser.add_argument('-v', dest='verbose', action='store_true')
-    parser.add_argument('-y', dest='yaml_flow', action='append')
+    parser.add_argument(
+        '-k', dest='insecure', action='store_true',
+        help='whether or not TLS certificate verification should be performed')
+    parser.add_argument('-s', dest='tls', action='store_true',
+                        help='Whether the server should handle SSL/TLS')
+    parser.add_argument('-p', dest="profile", action='append',
+                        help='The RP profile')
+    parser.add_argument('-y', dest='yaml_flow', action='append',
+                        help='Test descriptions in YAML format')
     parser.add_argument('-r', dest='rsa_key_dir', default='keys')
-    parser.add_argument('-m', dest='metadata')
-    parser.add_argument('-w', dest='cwd')
-    parser.add_argument('-P', dest='port')
-    parser.add_argument('-O', dest='op_profiles')
-    parser.add_argument('-s', dest='tls', action='store_true')
+    parser.add_argument('-w', dest='cwd', help='change working directory')
+    parser.add_argument(
+        '-P', dest='port', help='Which port the test instance should listen at')
+    parser.add_argument('-O', dest='op_profiles',
+                        help='Possible OP (=test tool) profiles')
     parser.add_argument(
         '-c', dest="ca_certs",
-        help=("CA certs to use to verify HTTPS server certificates, ",
-              "if HTTPS is used and no server CA certs are defined then ",
-              "no cert verification will be done"))
+        help="CA certs to use to verify HTTPS server certificates, " \
+             "if HTTPS is used and no server CA certs are defined then " \
+             "no cert verification will be done")
     parser.add_argument(dest="config")
     args = parser.parse_args()
 
