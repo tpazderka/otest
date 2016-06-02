@@ -60,6 +60,37 @@ LOOKUP = TemplateLookup(directories=[ROOT + 'htdocs'],
                         input_encoding='utf-8', output_encoding='utf-8')
 
 
+class JLog(object):
+    def __init__(self, logger, sid):
+        self.logger = logger
+        self.id = sid
+
+    def info(self, info):
+        _dict = {'id': self.id}
+        _dict.update(info)
+        self.logger.info(json.dumps(_dict))
+
+    def debug(self, info):
+        _dict = {'id': self.id}
+        _dict.update(info)
+        self.logger.debug(json.dumps(_dict))
+
+    def exception(self, info):
+        _dict = {'id': self.id}
+        _dict.update(info)
+        self.logger.exception(json.dumps(_dict))
+
+    def error(self, info):
+        _dict = {'id': self.id}
+        _dict.update(info)
+        self.logger.error(json.dumps(_dict))
+
+    def warning(self, info):
+        _dict = {'id': self.id}
+        _dict.update(info)
+        self.logger.warning(json.dumps(_dict))
+
+
 def css(environ, event_db):
     try:
         info = open(environ["PATH_INFO"]).read()
@@ -135,11 +166,12 @@ class Application(object):
 
     # publishes the OP endpoints
     def application(self, environ, start_response):
-        logger.info("Connection from: %s" % environ["REMOTE_ADDR"])
         session = environ['beaker.session']
 
+        jlog = JLog(logger, session.id)
         path = environ.get('PATH_INFO', '').lstrip('/')
-        logger.info("path: %s" % path)
+        jlog.info({"remote_addr": environ["REMOTE_ADDR"],
+                   "path": path})
         self.events.store(EV_REQUEST, path)
 
         try:
@@ -166,34 +198,35 @@ class Application(object):
             return static_mime(_path, environ, start_response)
         elif _path == "list":
             try:
-                qs = parse_qs(get_post(environ))
+                qs = parse_qs(get_or_post(environ))
             except Exception as err:
-                pass
+                jlog.error({'message': err})
             else:
-                sh['test_conf'] = dict([(k,v[0]) for k,v in qs.items()])
-                self.session_conf[sh['sid']] = sh
+                if qs:
+                    sh['test_conf'] = dict([(k,v[0]) for k,v in qs.items()])
+                    #self.session_conf[sh['sid']] = sh
 
             return tester.display_test_list()
         elif _path == '' or _path == 'config':
-            sid = rndstr(24)
-            sh['sid'] = sid
+            sid = 'AAAAA'
             try:
                 args = sh['test_conf']
             except:
                 args = {}
+            # self.session_conf[sid] = sh
+            # session['session_info'] = sh
             return tester.do_config(sid, **args)
         elif _path in self.kwargs['flows'].keys():  # Run flow
+            # Will use the same test configuration
             try:
                 _ = tester.sh['test_conf']
             except KeyError:
                 resp = SeeOther('/')
                 return resp(environ, start_response)
-            try:
-                _sid = tester.sh['sid']
-            except KeyError:
-                _sid = rndstr(24)
-                tester.sh['sid'] = _sid
-                self.session_conf[_sid] = sh
+            # But will create a new OP
+            _sid = rndstr(24)
+            tester.sh['sid'] = _sid
+            self.session_conf[_sid] = sh
 
             resp = tester.run(_path, sid=_sid, **self.kwargs)
             if isinstance(resp, requests.Response):
@@ -265,7 +298,7 @@ class Application(object):
 
             for endpoint, service in self.endpoints.items():
                 if _path == endpoint:
-                    logger.info("service: {}".format(service))
+                    jlog.info({"service":service})
                     try:
                         resp = self.handle(environ, tester, sid, service)
                         return resp(environ, start_response)
@@ -273,11 +306,11 @@ class Application(object):
                         print("%s" % err)
                         message = traceback.format_exception(*sys.exc_info())
                         print(message)
-                        logger.exception("%s" % err)
+                        jlog.exception(err)
                         resp = ServiceError("%s" % err)
                         return resp(environ)
 
-        logger.debug("unknown side: %s" % path)
+        jlog.debug({"unknown side": path})
         resp = NotFound("Couldn't find the side you asked for!")
         return resp(environ, start_response)
 
