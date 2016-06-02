@@ -175,7 +175,7 @@ class WebTester(tool.Tester):
 
         return True
 
-    def display_test_list(self):
+    def display_test_list(self, **kwargs):
         try:
             if self.sh.session_init():
                 return self.inut.flow_list()
@@ -184,7 +184,7 @@ class WebTester(tool.Tester):
                     resp = Redirect("%s/opresult#%s" % (
                         self.base_url, self.sh["testid"][0]))
                 except KeyError:
-                    return self.inut.flow_list()
+                    return self.inut.flow_list(**kwargs)
                 else:
                     return resp(self.inut.environ, self.inut.start_response)
         except Exception as err:
@@ -224,7 +224,8 @@ class WebTester(tool.Tester):
             'params': params,
             'issuer': _url,
             'profiles': self.kwargs['op_profiles'].keys(),
-            'selected': self.selected
+            'selected': self.selected,
+            'sid':sid
         }
         return resp(self.inut.environ, self.inut.start_response, **kwargs)
 
