@@ -37,7 +37,7 @@ class WebIO(IO):
         except AttributeError:
             self.base_url = kwargs['base']
 
-    def flow_list(self):
+    def flow_list(self, **kwargs):
         resp = Response(mako_template="flowlist.mako",
                         template_lookup=self.lookup,
                         headers=[])
@@ -51,6 +51,7 @@ class WebIO(IO):
             "testresults": TEST_RESULTS
         }
 
+        argv.update(kwargs)
         return resp(self.environ, self.start_response, **argv)
 
     def test_info(self, testid):
