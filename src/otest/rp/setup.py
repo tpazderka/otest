@@ -31,11 +31,51 @@ def read_uri_schemes(filename):
          r in reader])
 
 
+def read_path2port_map(filename):
+    """
+    Reads csv file containing two columns: column1 is path name,
+     column2 is port number
+
+    :param filename:
+    :return: dictionary with port as key and path as value
+    """
+    res = {}
+    with open(filename, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            res[row[1]] = row[0]
+    return res
+
+
 def as_arg_setup(args, lookup, config):
-    try:
-        _issuer = config.issuer % args.port
-    except TypeError:
-        _issuer = config.issuer % int(args.port)
+    if args.port:
+        _port = args.port
+    else:
+        if args.tls:
+            _port = 443
+        else:
+            _port = 80
+
+    if args.path2port:
+        # means there is a reverse proxy in front translating
+        # path -> port
+        p2p_map = read_path2port_map(args.path2port)
+        _path = p2p_map[_port]
+        if args.xport:
+            _issuer = "{base}:{port}/{path}".format(base=config.baseurl,
+                                                    port=args.xport,
+                                                    path=_path)
+            _port = args.xport
+        else:
+            _issuer = "{base}/{path}".format(base=config.baseurl, path=_path)
+    else:  # the old port based
+        _path = ''
+        _issuer = "{base}:{port}".format(base=config.baseurl, port=_port)
+
+    # try:
+    #     _issuer = config.issuer % args.port
+    # except TypeError:
+    #     _issuer = config.issuer % int(args.port)
 
     # Client data base
     # cdb = shelve.open(config.CLIENT_DB, writeback=True)
@@ -71,6 +111,8 @@ def as_arg_setup(args, lookup, config):
 
     as_args = {
         "name": _issuer,
+        'instance_path': _path,
+        'instance_port': _port,
         "cdb": cdb,
         "authn_broker": ac,
         "userinfo": userinfo,

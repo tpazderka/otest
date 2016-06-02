@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import importlib
 import json
 import logging
@@ -156,11 +155,16 @@ class Application(object):
 
         tester = WebTester(inut, sh, **self.kwargs)
 
-        if path == "robots.txt":
+        if 'path' in self.kwargs and path.startswith(self.kwargs['path']):
+            _path = path[len(kwargs['path'])+1:]
+        else:
+            _path = path
+
+        if _path == "robots.txt":
             return static_mime("static/robots.txt", environ, start_response)
-        elif path.startswith("static/"):
-            return static_mime(path, environ, start_response)
-        elif path == "list":
+        elif _path.startswith("static/"):
+            return static_mime(_path, environ, start_response)
+        elif _path == "list":
             try:
                 qs = parse_qs(get_post(environ))
             except Exception as err:
@@ -170,7 +174,7 @@ class Application(object):
                 self.session_conf[sh['sid']] = sh
 
             return tester.display_test_list()
-        elif path == '' or path == 'config':
+        elif _path == '' or _path == 'config':
             sid = rndstr(24)
             sh['sid'] = sid
             try:
@@ -178,7 +182,7 @@ class Application(object):
             except:
                 args = {}
             return tester.do_config(sid, **args)
-        elif path in self.kwargs['flows'].keys():  # Run flow
+        elif _path in self.kwargs['flows'].keys():  # Run flow
             try:
                 _ = tester.sh['test_conf']
             except KeyError:
@@ -191,31 +195,38 @@ class Application(object):
                 tester.sh['sid'] = _sid
                 self.session_conf[_sid] = sh
 
-            resp = tester.run(path, sid=_sid, **self.kwargs)
+            resp = tester.run(_path, sid=_sid, **self.kwargs)
             if isinstance(resp, requests.Response):
                 loc = resp.headers['location']
                 #tester.conv.events.store('Cookie', resp.headers['set-cookie'])
                 if loc.startswith(tester.base_url):
-                    path = loc[len(tester.base_url):]
+                    _path = loc[len(tester.base_url):]
+                    if _path[0] == '/':
+                        _path = _path[1:]
                 else:
                     return resp
             elif resp is True or resp is False or resp is None:
                 return tester.display_test_list()
             else:
                 return resp(environ, start_response)
-        elif path == 'display':
+        elif _path == 'display':
             return inut.flow_list()
-        elif path == "opresult":
+        elif _path == "opresult":
+            try:
+                _display_path = '/{}/display'.format(self.kwargs['path'])
+            except KeyError:
+                _display_path = '/display'
             resp = SeeOther(
-                "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
+                "{}#{}".format(_display_path,
+                               self.pick_grp(sh['conv'].test_id)))
             return resp(environ, start_response)
-        elif path.startswith("test_info"):
-            p = path.split("/")
+        elif _path.startswith("test_info"):
+            p = _path.split("/")
             try:
                 return inut.test_info(p[1])
             except KeyError:
                 return inut.not_found()
-        elif path == 'all':
+        elif _path == 'all':
             for test_id in sh['flow_names']:
                 resp = tester.run(test_id, **self.kwargs)
                 if resp is True or resp is False:
@@ -229,7 +240,7 @@ class Application(object):
 
         # Whatever gets here should be of the form <session_id>/<path>
         try:
-            sid, _path = path.split('/', 1)
+            sid, _path = _path.split('/', 1)
         except ValueError:
             pass
         else:
@@ -289,7 +300,6 @@ def key_handling(key_dir):
     return {key_dir: only_files}
 
 
-
 # def find_allowed_algorithms(metadata_file, ic):
 #     mds = MetadataStore(ic.attribute_converters, ic,
 #                         disable_ssl_certificate_validation=True)
@@ -332,6 +342,7 @@ if __name__ == '__main__':
     parser.add_argument('-y', dest='yaml_flow', action='append',
                         help='Test descriptions in YAML format')
     parser.add_argument('-r', dest='rsa_key_dir', default='keys')
+    parser.add_argument('-m', dest='path2port')
     parser.add_argument('-w', dest='cwd', help='change working directory')
     parser.add_argument(
         '-P', dest='port', help='Which port the test instance should listen at')
@@ -342,6 +353,8 @@ if __name__ == '__main__':
         help="CA certs to use to verify HTTPS server certificates, " \
              "if HTTPS is used and no server CA certs are defined then " \
              "no cert verification will be done")
+    parser.add_argument(
+        '-x', dest='xport', help='ONLY for testing')
     parser.add_argument(dest="config")
     args = parser.parse_args()
 
@@ -388,21 +401,11 @@ if __name__ == '__main__':
     else:
         base_dir = os.getcwd()
 
-    if args.port:
-        _port = args.port
-    else:
-        if args.tls:
-            _port = 443
-        else:
-            _port = 80
-
-    _base = "{base}:{port}/".format(base=config.baseurl, port=_port)
-
     as_args, key_args = as_arg_setup(args, lookup=LOOKUP, config=config)
 
     _op_profiles = json.load(open(args.op_profiles))
 
-    kwargs = {"base_url": _base, "test_specs": fdef,
+    kwargs = {"base_url": as_args['name'], "test_specs": fdef,
               'flows': fdef['Flows'], 'order': fdef['Order'],
               "profile": args.profile, 'desc': fdef['Desc'],
               "msg_factory": config.TOOL_ARGS['cls_factories'],
@@ -418,14 +421,22 @@ if __name__ == '__main__':
     if args.ca_certs:
         kwargs['ca_certs'] = args.ca_certs
 
-    _app = Application(base=_base, **kwargs)
+    if args.path2port:
+        kwargs['path'] = as_args['instance_path']
+
+    _app = Application(base=as_args['name'], **kwargs)
     _app.endpoints = {
         '.well-known/openid-configuration': 'providerinfo_endpoint'
     }
 
+    if args.xport:
+        _port = int(args.xport)
+    else:
+        _port = int(as_args['instance_port'])
+
     # Initiate the web server
     SRV = wsgiserver.CherryPyWSGIServer(
-        ('0.0.0.0', int(_port)),
+        ('0.0.0.0', _port),
         SessionMiddleware(_app.application, session_opts))
 
     if args.tls:
@@ -438,6 +449,7 @@ if __name__ == '__main__':
     else:
         extra = ""
 
+    print('issuer: {}'.format(as_args['name']))
     txt = "RP test tool started {}.".format(extra)
     logger.info(txt)
     print(txt)
