@@ -88,7 +88,7 @@ class ConfigurationResponse(Response):
     def construct_message(self):
         op = self.conv.entity
         resp = op.providerinfo_endpoint()
-        if resp.status == '200 OK':
+        if resp.status == '200 OK' or resp.status == '201 Created':
             self.conv.events.store(EV_RESPONSE, resp.message, direction=OUTGOING)
         return resp
 
@@ -189,10 +189,12 @@ class UserInfoResponse(Response):
         self.msg_args = kwargs
 
     def construct_message(self):
-        _kwargs = {
-            'request': self.conv.events.last_item(EV_REQUEST),
-            'authn': self.conv.events.last_item('HTTP_AUTHORIZATION')
-        }
+        _kwargs = {'request': self.conv.events.last_item(EV_REQUEST)}
+        try:
+            _kwargs['authn'] = self.conv.events.last_item('HTTP_AUTHORIZATION')
+        except NoSuchEvent:
+            pass
+
         _kwargs.update(self.msg_args)
         _kwargs.update(self.op_args)
 
