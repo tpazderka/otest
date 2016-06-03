@@ -316,7 +316,7 @@ class AsyncRequest(Request):
             try:
                 info = query["fragment"][0]
             except KeyError:
-                return inut.sorry_response(inut.conf.BASE, "missing fragment ?!")
+                return inut.sorry_response(inut.base_url, "missing fragment ?!")
         elif response_where == "":
             info = inut.environ["QUERY_STRING"]
             _ctype = "urlencoded"

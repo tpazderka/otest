@@ -147,7 +147,7 @@ class WebTester(Tester):
             else:
                 try:
                     resp = Redirect("%sopresult#%s" % (
-                        self.inut.conf.BASE, self.sh["testid"][0]))
+                        self.kwargs['base_url'], self.sh["testid"][0]))
                 except KeyError:
                     return self.inut.flow_list()
                 else:

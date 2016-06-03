@@ -28,7 +28,7 @@ TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
 class WebIO(IO):
     def __init__(self, conf, flows, desc, profile_handler, profile, lookup,
                  cache=None, environ=None, start_response=None, session=None,
-                 **kwargs):
+                 base_url='', **kwargs):
         IO.__init__(self, flows, profile, desc, profile_handler, cache,
                     session=session, **kwargs)
 
@@ -36,6 +36,7 @@ class WebIO(IO):
         self.lookup = lookup
         self.environ = environ
         self.start_response = start_response
+        self.base_url = base_url
 
     def flow_list(self):
         try:
@@ -58,7 +59,7 @@ class WebIO(IO):
             "flows": self.session["tests"],
             "profile": self.session["profile"],
             "test_info": list(self.session["test_info"].keys()),
-            "base": self.conf.BASE,
+            "base": self.base_url,
             "headlines": self.desc,
             "testresults": TEST_RESULTS
         }

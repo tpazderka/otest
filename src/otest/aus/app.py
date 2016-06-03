@@ -13,13 +13,14 @@ logger = logging.getLogger(__name__)
 
 class WebApplication(object):
     def __init__(self, sessionhandler, webio, webtester, check, webenv,
-                 pick_grp):
+                 pick_grp, path=''):
         self.sessionhandler = sessionhandler
         self.webio = webio
         self.webtester = webtester
         self.check = check
         self.webenv = webenv
         self.pick_grp = pick_grp
+        self.path = path
 
     def application(self, environ, start_response):
         logger.info("Connection from: %s" % environ["REMOTE_ADDR"])
@@ -51,13 +52,18 @@ class WebApplication(object):
         elif path.startswith("export/"):
             return inut.static(path)
 
-        if path == "":  # list
+        if self.path and path.startswith(self.path):
+            _path = path[len(self.path)+1:]
+        else:
+            _path = path
+
+        if _path == "":  # list
             return tester.display_test_list()
 
-        if path == "logs":
+        if _path == "logs":
             return inut.display_log("log", issuer="", profile="", testid="")
-        elif path.startswith("log"):
-            if path == "log" or path == "log/":
+        elif _path.startswith("log"):
+            if _path == "log" or _path == "log/":
                 _cc = inut.conf.CLIENT
                 try:
                     _iss = _cc["srv_discovery_url"]
@@ -66,36 +72,36 @@ class WebApplication(object):
                 parts = [quote_plus(_iss)]
             else:
                 parts = []
-                while path != "log":
-                    head, tail = os.path.split(path)
+                while _path != "log":
+                    head, tail = os.path.split(_path)
                     # tail = tail.replace(":", "%3A")
                     # if tail.endswith("%2F"):
                     #     tail = tail[:-3]
                     parts.insert(0, tail)
-                    path = head
+                    _path = head
 
             return inut.display_log("log", *parts)
-        elif path.startswith("tar"):
-            path = path.replace(":", "%3A")
-            return inut.static(path)
+        elif _path.startswith("tar"):
+            _path = _path.replace(":", "%3A")
+            return inut.static(_path)
 
-        if path == "reset":
+        if _path == "reset":
             sh.reset_session()
             return inut.flow_list()
-        elif path == "pedit":
+        elif _path == "pedit":
             try:
                 return inut.profile_edit()
             except Exception as err:
                 return inut.err_response("pedit", err)
-        elif path == "profile":
+        elif _path == "profile":
             return tester.set_profile(environ)
-        elif path.startswith("test_info"):
-            p = path.split("/")
+        elif _path.startswith("test_info"):
+            p = _path.split("/")
             try:
                 return inut.test_info(p[1])
             except KeyError:
                 return inut.not_found()
-        elif path == "continue":
+        elif _path == "continue":
             resp = tester.cont(environ, self.webenv)
             session['session_info'] = inut.session
             if resp:
@@ -104,15 +110,15 @@ class WebApplication(object):
                 resp = SeeOther(
                     "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
                 return resp(environ, start_response)
-        elif path == 'display':
+        elif _path == 'display':
             return inut.flow_list()
-        elif path == "opresult":
+        elif _path == "opresult":
             resp = SeeOther(
                 "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
             return resp(environ, start_response)
-        # expected path format: /<testid>[/<endpoint>]
-        elif path in sh["flow_names"]:
-            resp = tester.run(path, **self.webenv)
+        # expected _path format: /<testid>[/<endpoint>]
+        elif _path in sh["flow_names"]:
+            resp = tester.run(_path, **self.webenv)
             session['session_info'] = inut.session
 
             if resp is False or resp is True:
@@ -121,16 +127,16 @@ class WebApplication(object):
                 return resp
 
             try:
-                #return inut.flow_list()
+                #  return inut.flow_list()
                 resp = SeeOther(
                     "/display#{}".format(
-                        self.pick_grp(path)))
+                        self.pick_grp(_path)))
                 return resp(environ, start_response)
             except Exception as err:
                 logger.error(err)
                 raise
-        elif path in ["authz_cb", "authz_post"]:
-            if path == "authz_cb":
+        elif _path in ["authz_cb", "authz_post"]:
+            if _path == "authz_cb":
                 _conv = sh["conv"]
                 try:
                     response_mode = _conv.req.req_args["response_mode"]
@@ -174,7 +180,7 @@ class WebApplication(object):
                     return resp
 
                 try:
-                    #return inut.flow_list()
+                    # return inut.flow_list()
                     resp = SeeOther(
                         "/display#{}".format(
                             self.pick_grp(sh['conv'].test_id)))
