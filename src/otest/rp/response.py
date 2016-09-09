@@ -1,8 +1,8 @@
-from aatest.events import EV_SEND
-from aatest.events import EV_REDIRECT_URL
-from aatest.events import EV_HTTP_RESPONSE
-from aatest.operation import Operation
-from aatest.verify import Verify
+from otest.events import EV_SEND
+from otest.events import EV_REDIRECT_URL
+from otest.events import EV_HTTP_RESPONSE
+from otest.operation import Operation
+from otest.verify import Verify
 from oic.oauth2.message import Message
 from oic.utils import http_util
 

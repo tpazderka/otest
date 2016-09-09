@@ -1,24 +1,27 @@
 import logging
 import os
 
-from aatest import exception_trace, ConfigurationError, ConditionError
-from aatest import tool
-from aatest.check import OK
-from aatest.check import State
-from aatest.events import EV_CONDITION
-from aatest.events import EV_PROTOCOL_REQUEST
-from aatest.events import EV_REQUEST
-from aatest.events import EV_RESPONSE
-from aatest.result import Result
-from aatest.result import safe_path
-from aatest.session import Done
-from aatest.summation import store_test_state
-from aatest.verify import Verify
 from future.backports.urllib.parse import parse_qs
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import SeeOther
 from oic.utils.http_util import Response
+
+from otest import ConditionError
+from otest import ConfigurationError
+from otest import Done
+from otest import exception_trace
+from otest import tool
+from otest.check import OK
+from otest.check import State
 from otest.conversation import Conversation
+from otest.events import EV_CONDITION
+from otest.events import EV_PROTOCOL_REQUEST
+from otest.events import EV_REQUEST
+from otest.events import EV_RESPONSE
+from otest.result import Result
+from otest.result import safe_path
+from otest.summation import store_test_state
+from otest.verify import Verify
 
 logger = logging.getLogger(__name__)
 

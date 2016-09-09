@@ -3,7 +3,6 @@ import logging
 import csv
 import pkg_resources
 
-from aatest.events import Events
 from oic.extension.token import JWTToken
 
 from oic.utils.authn.authn_context import AuthnBroker
@@ -13,6 +12,7 @@ from oic.utils.keyio import keyjar_init
 from oic.utils.sdb import SessionDB
 from oic.utils.userinfo import UserInfo
 
+from otest.events import Events
 from otest.rp.provider import Provider
 
 logger = logging.getLogger(__name__)

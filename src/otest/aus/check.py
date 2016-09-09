@@ -7,18 +7,18 @@ from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import MissingRequiredAttribute
 from oic.oauth2.message import AuthorizationResponse
 
-from aatest.check import CriticalError
-from aatest.check import ExpectedError
-from aatest.check import ERROR
-from aatest.check import CRITICAL
-from aatest.check import Error
-from aatest.check import WARNING
-from aatest.check import Check
-from aatest.events import EV_RESPONSE
-from aatest.events import EV_PROTOCOL_RESPONSE
-from aatest.events import EV_HTTP_RESPONSE
-
+from otest.check import Check
+from otest.check import CRITICAL
+from otest.check import CriticalError
+from otest.check import ERROR
+from otest.check import Error
+from otest.check import ExpectedError
 from otest.check import get_protocol_response
+from otest.check import WARNING
+from otest.events import EV_RESPONSE
+from otest.events import EV_PROTOCOL_RESPONSE
+from otest.events import EV_HTTP_RESPONSE
+
 
 __author__ = 'rolandh'
 
@@ -501,6 +501,6 @@ def factory(cid):
             except AttributeError:
                 pass
 
-    from aatest.check import factory as a_factory
+    from otest.check import factory as a_factory
 
     return a_factory(cid)

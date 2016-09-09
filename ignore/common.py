@@ -9,10 +9,10 @@ from future.backports.urllib.parse import urlparse
 
 from oic.utils.keyio import build_keyjar
 
-import aatest
+import otest
 
-from aatest.summation import assert_summation
-from aatest.verify import Verify
+from otest.summation import assert_summation
+from otest.verify import Verify
 
 
 __author__ = 'roland'
@@ -112,7 +112,7 @@ def run_flow(profiles, conv, test_id, conf, profile, check_factory, io, sh,
     except KeyError:
         pass
     except Exception as err:
-        aatest.exception_trace('run_flow', err, logger)
+        otest.exception_trace('run_flow', err, logger)
         raise
 
     info = assert_summation(conv.events, test_id)

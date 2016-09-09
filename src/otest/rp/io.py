@@ -1,13 +1,13 @@
 import logging
-from aatest.summation import represent_result
 
 from oic.utils.http_util import Response, NotFound
 
-from aatest.check import ERROR
-from aatest.check import OK
-from aatest.check import WARNING
-from aatest.check import INCOMPLETE
-from aatest.io import IO
+from otest.summation import represent_result
+from otest.check import ERROR
+from otest.check import OK
+from otest.check import WARNING
+from otest.check import INCOMPLETE
+from otest.io import IO
 
 __author__ = 'roland'
 

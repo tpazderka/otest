@@ -16,12 +16,12 @@ from oic.utils.keyio import KeyBundle
 from oic.utils.keyio import ec_init
 from oic.utils.keyio import dump_jwks
 
-from aatest import RequirementsNotMet
-from aatest import Unknown
-from aatest import operation
-from aatest.operation import request_with_client_http_session
+from otest import RequirementsNotMet
+from otest import Unknown
+from otest import operation
 
 from otest.aus.request import SyncGetRequest
+from otest.operation import request_with_client_http_session
 
 __author__ = 'roland'
 
@@ -228,7 +228,7 @@ def factory(name):
             if name == fname:
                 return obj
 
-    from aatest import operation
+    from otest import operation
 
     obj = operation.factory(name)
     if not obj:

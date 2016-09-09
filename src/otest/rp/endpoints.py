@@ -2,11 +2,11 @@ import logging
 import mimetypes
 import os
 
-from aatest.check import State
-from aatest.check import ERROR
-from aatest.events import EV_CONDITION
-from aatest.events import EV_HTTP_INFO
-from aatest.events import EV_REQUEST
+from otest.check import State
+from otest.check import ERROR
+from otest.events import EV_CONDITION
+from otest.events import EV_HTTP_INFO
+from otest.events import EV_REQUEST
 
 from future.backports.urllib.parse import parse_qs
 

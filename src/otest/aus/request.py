@@ -19,15 +19,15 @@ from oic.oauth2.util import URL_ENCODED
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import get_post
 
-from aatest import Break
-from aatest import operation
-from aatest import Unknown
-from aatest.log import Log
-from aatest.events import EV_HTTP_RESPONSE
-from aatest.events import EV_PROTOCOL_RESPONSE
-from aatest.events import EV_RESPONSE
-from aatest.events import EV_REQUEST
-from aatest.events import EV_REDIRECT_URL
+from otest import Break
+from otest import operation
+from otest import Unknown
+from otest.log import Log
+from otest.events import EV_HTTP_RESPONSE
+from otest.events import EV_PROTOCOL_RESPONSE
+from otest.events import EV_RESPONSE
+from otest.events import EV_REQUEST
+from otest.events import EV_REDIRECT_URL
 
 __author__ = 'rolandh'
 

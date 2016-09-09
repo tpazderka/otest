@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sys
+import requests
 import traceback
 
 from os import listdir
@@ -11,34 +12,29 @@ from os.path import isdir
 from os.path import isfile
 from os.path import join
 
-import requests
-from aatest import Trace
-from aatest.events import Events
-from aatest.events import EV_REQUEST
-from aatest.events import EV_RESPONSE
-from aatest.parse_cnf import parse_yaml_conf
-from aatest.session import SessionHandler
-
 from future.backports.urllib.parse import parse_qs
 
 from mako.lookup import TemplateLookup
+
 from oic import rndstr
-from oic.utils import http_util
-
-from oidctest.rp.prof_util import ProfileHandler
-from otest.rp.endpoints import static_mime
-
-from otest.rp.io import WebIO
-from otest.rp.setup import as_arg_setup
-from otest.rp.tool import WebTester
-
 from oic.utils.http_util import extract_from_request
 from oic.utils.http_util import get_or_post
-from oic.utils.http_util import get_post
 from oic.utils.http_util import NotFound
 from oic.utils.http_util import Response
 from oic.utils.http_util import ServiceError
 from oic.utils.http_util import SeeOther
+from oic.utils import http_util
+
+from otest import Trace
+from otest.events import Events
+from otest.events import EV_REQUEST
+from otest.events import EV_RESPONSE
+from otest.parse_cnf import parse_yaml_conf
+from otest.session import SessionHandler
+from otest.rp.endpoints import static_mime
+from otest.rp.io import WebIO
+from otest.rp.setup import as_arg_setup
+from otest.rp.tool import WebTester
 
 
 __author__ = 'roland'
@@ -401,11 +397,12 @@ if __name__ == '__main__':
 
     sys.path.insert(0, ".")
     config = importlib.import_module(args.config)
+    tool_args = config.TOOL_ARGS
 
     fdef = {'Flows': {}, 'Order': [], 'Desc': {}}
     for flow_def in args.yaml_flow:
-        spec = parse_yaml_conf(flow_def, config.TOOL_ARGS['cls_factories'],
-                               config.TOOL_ARGS['func_factory'])
+        spec = parse_yaml_conf(flow_def, tool_args['cls_factories'],
+                               tool_args['func_factory'])
         fdef['Flows'].update(spec['Flows'])
         fdef['Desc'].update(spec['Desc'])
         fdef['Order'].extend(spec['Order'])
@@ -441,13 +438,13 @@ if __name__ == '__main__':
     kwargs = {"base_url": as_args['name'], "test_specs": fdef,
               'flows': fdef['Flows'], 'order': fdef['Order'],
               "profile": args.profile, 'desc': fdef['Desc'],
-              "msg_factory": config.TOOL_ARGS['cls_factories'],
-              "check_factory": config.TOOL_ARGS['chk_factory'],
+              "msg_factory": tool_args['cls_factories'],
+              "check_factory": tool_args['chk_factory'],
               'conf': config, "cache": {}, 'op_profiles': _op_profiles,
-              "profile_handler": ProfileHandler, 'map_prof': None,
+              "profile_handler": tool_args['profile_handler'], 'map_prof': None,
               'trace_cls': Trace, 'lookup': LOOKUP,
               'make_entity': make_entity, 'base_dir': base_dir,
-              'signing_key': keys, 'provider_cls': config.TOOL_ARGS['provider'],
+              'signing_key': keys, 'provider_cls': tool_args['provider'],
               'as_args': as_args, 'response_cls': http_util.Response
               }
 

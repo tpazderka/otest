@@ -7,15 +7,15 @@ from future.backports.urllib.parse import unquote
 from oic.utils.http_util import NotFound
 from oic.utils.http_util import Response
 
-from aatest.check import ERROR
-from aatest.check import OK
-from aatest.check import WARNING
-from aatest.check import INCOMPLETE
-from aatest.io import IO
-from aatest.log import with_or_without_slash
-from aatest.summation import represent_result
-from aatest.summation import store_test_state
-from aatest.utils import get_test_info
+from otest.check import ERROR
+from otest.check import OK
+from otest.check import WARNING
+from otest.check import INCOMPLETE
+from otest.io import IO
+from otest.log import with_or_without_slash
+from otest.summation import represent_result
+from otest.summation import store_test_state
+from otest.utils import get_test_info
 
 __author__ = 'roland'
 

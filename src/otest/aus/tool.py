@@ -2,28 +2,28 @@ import logging
 #from urllib.parse import parse_qs
 from future.backports.urllib.parse import parse_qs
 
-from aatest import exception_trace
-from aatest import Break
-from aatest import tool
-from aatest.check import ERROR
-from aatest.check import OK
-from aatest.check import State
-from aatest.events import EV_CONDITION
-from aatest.events import EV_REDIRECT_URL
-from aatest.io import eval_state
-from aatest.result import Result
-from aatest.result import safe_path
-from aatest.session import Done
-from aatest.summation import store_test_state
-from aatest.verify import Verify
 
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
 from oic.utils.http_util import get_post
 
+from otest import Break
 from otest import CRYPTSUPPORT
+from otest import Done
+from otest import exception_trace
+from otest import tool
 from otest import Trace
+from otest.check import ERROR
+from otest.check import OK
+from otest.check import State
 from otest.conversation import Conversation
+from otest.events import EV_CONDITION
+from otest.events import EV_REDIRECT_URL
+from otest.io import eval_state
+from otest.result import Result
+from otest.result import safe_path
+from otest.summation import store_test_state
+from otest.verify import Verify
 
 __author__ = 'roland'
 

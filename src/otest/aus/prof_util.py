@@ -1,4 +1,4 @@
-from aatest import prof_util
+from otest import prof_util
 
 __author__ = 'roland'
 

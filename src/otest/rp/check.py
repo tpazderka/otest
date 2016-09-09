@@ -5,12 +5,12 @@ import requests
 
 from future.backports.urllib.parse import urlparse
 
-from aatest.check import Check
-from aatest.check import ERROR
-from aatest.check import WARNING
-from aatest.events import EV_PROTOCOL_REQUEST
-from aatest.events import NoSuchEvent
-from aatest.shannon_entropy import calculate
+from otest.check import Check
+from otest.check import ERROR
+from otest.check import WARNING
+from otest.events import EV_PROTOCOL_REQUEST
+from otest.events import NoSuchEvent
+from otest.shannon_entropy import calculate
 
 from oic.oauth2 import AuthorizationRequest
 from oic.oauth2 import AccessTokenRequest
@@ -317,5 +317,5 @@ def factory(cid):
             except AttributeError:
                 pass
 
-    from aatest import check
+    from otest import check
     return check.factory(cid)

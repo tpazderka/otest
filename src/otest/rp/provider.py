@@ -1,6 +1,5 @@
 import json
 import time
-from aatest.events import EV_PROTOCOL_REQUEST
 from future.backports.urllib.parse import parse_qs
 
 from Cryptodome.PublicKey import RSA
@@ -13,6 +12,8 @@ from oic.extension.client import RegistrationRequest
 from oic.oauth2.message import AccessTokenRequest
 from oic.oauth2.message import ASConfigurationResponse
 from oic.utils.keyio import keyjar_init
+
+from otest.events import EV_PROTOCOL_REQUEST
 
 __author__ = 'roland'
 
