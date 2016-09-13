@@ -82,6 +82,7 @@ class Tester(tool.Tester):
                 funcs = {}
 
             logger.info("<--<-- {} --- {} -->-->".format(index, cls))
+            self.conv.trace.info("<--<-- {} --- {} -->-->".format(index, cls))
             try:
                 _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                             profile=self.profile, test_id=test_id, conf=conf,

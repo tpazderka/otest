@@ -1,6 +1,5 @@
 import inspect
 import logging
-from otest.aus.prof_util import RESPONSE
 import requests
 import copy
 import sys
@@ -28,6 +27,7 @@ from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_RESPONSE
 from otest.events import EV_REQUEST
 from otest.events import EV_REDIRECT_URL
+from otest.prof_util import RESPONSE
 
 __author__ = 'rolandh'
 

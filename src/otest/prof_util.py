@@ -5,12 +5,31 @@ from future.backports.urllib.parse import quote_plus
 
 from aatest.log import with_or_without_slash
 
+RESPONSE = 0
+WEBFINGER = 1
+DISCOVER = 2
+REGISTER = 3
+CRYPTO = 4
+EXTRAS = 5
+
 __author__ = 'roland'
 
 
 class ProfileHandler(object):
     def __init__(self, session):
         self.session = session
+
+    @staticmethod
+    def webfinger(profile):
+        return profile[WEBFINGER] == "T"
+
+    @staticmethod
+    def discover(profile):
+        return profile[DISCOVER] == "T"
+
+    @staticmethod
+    def register(profile):
+        return profile[REGISTER] == "T"
 
     def to_profile(self, representation="list"):
         return []

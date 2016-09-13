@@ -100,6 +100,8 @@ class Operation(object):
         for op, arg in list(self.funcs.items()):
             op(self, arg)
 
+        self.conv.trace.info('op_args: {}'.format(self.op_args))
+
     def map_profile(self, profile_map):
         pass
 
