@@ -30,7 +30,7 @@ class WebTester(tool.Tester):
     def __init__(self, *args, **kwargs):
         tool.Tester.__init__(self, *args, **kwargs)
         try:
-            self.base_url = self.inut.conf.BASE
+            self.base_url = self.conv.entity.base_url
         except AttributeError:
             self.base_url = self.kwargs['base']
         self.provider_cls = self.kwargs['provider_cls']

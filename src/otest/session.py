@@ -1,5 +1,7 @@
 import copy
 import logging
+
+from otest import Done
 from otest.parse_cnf import sort
 
 __author__ = 'roland'
@@ -76,7 +78,7 @@ class SessionHandler(object):
         self.init_session(profile)
 
     def session_init(self):
-        if "tests" not in self:
+        if "tests" not in self or self['tests'] == []:
             self.init_session()
             return True
         else:

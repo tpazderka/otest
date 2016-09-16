@@ -33,9 +33,9 @@ class WebIO(IO):
         self.start_response = start_response
 
         try:
+            self.base_url = kwargs['base_url']
+        except KeyError:
             self.base_url = conf.BASE
-        except AttributeError:
-            self.base_url = kwargs['base']
 
     def flow_list(self, **kwargs):
         resp = Response(mako_template="flowlist.mako",

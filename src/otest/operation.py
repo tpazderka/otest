@@ -102,8 +102,14 @@ class Operation(object):
 
         self.conv.trace.info('op_args: {}'.format(self.op_args))
 
-    def map_profile(self, profile_map):
-        pass
+    def apply_profile(self, profile_map):
+        try:
+            kwargs = profile_map[self.__class__][self.profile[0]]
+        except KeyError:
+            return
+        else:
+            for op,arg in kwargs.items():
+                op(self, arg)
 
     def op_setup(self):
         pass
@@ -116,7 +122,7 @@ class Operation(object):
         :return:
         """
         if profile_map:
-            self.map_profile(profile_map)
+            self.apply_profile(profile_map)
         self.op_setup()
         self._setup()
 
@@ -180,8 +186,8 @@ class Note(Notice):
     def args(self):
         return {
             "url": "%scontinue?path=%s&index=%d" % (
-                self.inut.conf.BASE, self.test_id, self.sh["index"]),
-            "back": self.inut.conf.BASE,
+                self.conv.entity.base_url, self.test_id, self.sh["index"]),
+            "back": self.conv.entity.base_url,
             "note": self.message,
         }
 
