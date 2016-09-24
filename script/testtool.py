@@ -202,7 +202,8 @@ class Application(object):
                     sh['test_conf'] = dict([(k,v[0]) for k,v in qs.items()])
                     #self.session_conf[sh['sid']] = sh
 
-            return tester.display_test_list()
+            res = tester.display_test_list()
+            return res
         elif _path == '' or _path == 'config':
             sid = 'AAAAA'
             try:

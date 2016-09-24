@@ -226,7 +226,7 @@ class WebTester(tool.Tester):
             'start_page': start_page,
             'params': params,
             'issuer': _url,
-            'profiles': self.kwargs['op_profiles'].keys(),
+            'profiles': list(self.kwargs['op_profiles'].keys()),
             'selected': self.selected,
             'sid':sid
         }

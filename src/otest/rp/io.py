@@ -35,7 +35,10 @@ class WebIO(IO):
         try:
             self.base_url = kwargs['base_url']
         except KeyError:
-            self.base_url = conf.BASE
+            try:
+                self.base_url = kwargs['base']
+            except KeyError:
+                self.base_url = conf.BASE
 
     def flow_list(self, **kwargs):
         resp = Response(mako_template="flowlist.mako",
