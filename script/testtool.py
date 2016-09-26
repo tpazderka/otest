@@ -36,7 +36,6 @@ from otest.rp.io import WebIO
 from otest.rp.setup import as_arg_setup
 from otest.rp.tool import WebTester
 
-
 __author__ = 'roland'
 
 logger = logging.getLogger("")
@@ -184,7 +183,7 @@ class Application(object):
         tester = WebTester(inut, sh, **self.kwargs)
 
         if 'path' in self.kwargs and path.startswith(self.kwargs['path']):
-            _path = path[len(kwargs['path'])+1:]
+            _path = path[len(kwargs['path']) + 1:]
         else:
             _path = path
 
@@ -199,8 +198,8 @@ class Application(object):
                 jlog.error({'message': err})
             else:
                 if qs:
-                    sh['test_conf'] = dict([(k,v[0]) for k,v in qs.items()])
-                    #self.session_conf[sh['sid']] = sh
+                    sh['test_conf'] = dict([(k, v[0]) for k, v in qs.items()])
+                    # self.session_conf[sh['sid']] = sh
 
             res = tester.display_test_list()
             return res
@@ -226,15 +225,25 @@ class Application(object):
             self.session_conf[_sid] = sh
 
             resp = tester.run(_path, sid=_sid, **self.kwargs)
+            logger.info(
+                'Response class: {}'.format(resp.__class__.__name__))
+
             if isinstance(resp, requests.Response):
-                loc = resp.headers['location']
-                #tester.conv.events.store('Cookie', resp.headers['set-cookie'])
-                if loc.startswith(tester.base_url):
-                    _path = loc[len(tester.base_url):]
-                    if _path[0] == '/':
-                        _path = _path[1:]
+                try:
+                    loc = resp.headers['location']
+                except KeyError:
+                    logger.info(
+                        'Response type: {}, missing location'.format(
+                            type(resp)))
                 else:
-                    return resp
+                    # tester.conv.events.store('Cookie', resp.headers[
+                    # 'set-cookie'])
+                    if loc.startswith(tester.base_url):
+                        _path = loc[len(tester.base_url):]
+                        if _path[0] == '/':
+                            _path = _path[1:]
+
+                return resp
             elif resp is True or resp is False or resp is None:
                 return tester.display_test_list()
             else:
@@ -286,7 +295,7 @@ class Application(object):
             tester.sh = _sh
             if 'HTTP_AUTHORIZATION' in environ:
                 _sh['conv'].events.store('HTTP_AUTHORIZATION',
-                                      environ['HTTP_AUTHORIZATION'])
+                                         environ['HTTP_AUTHORIZATION'])
             _p = _path.split('?')
             if _p[0] in _sh['conv'].entity.endpoints():
                 resp = self.handle(environ, tester, sid, *_p)
@@ -295,7 +304,7 @@ class Application(object):
 
             for endpoint, service in self.endpoints.items():
                 if _path == endpoint:
-                    jlog.info({"service":service})
+                    jlog.info({"service": service})
                     try:
                         resp = self.handle(environ, tester, sid, service)
                         return resp(environ, start_response)
@@ -323,7 +332,7 @@ def key_handling(key_dir):
         only_files = ['one.pem']
         for fil in only_files:
             key = RSA.generate(2048)
-            f = open(join(key_dir, fil),'w')
+            f = open(join(key_dir, fil), 'w')
             f.write(key.exportKey('PEM').decode('utf8'))
             f.close()
 
@@ -343,7 +352,8 @@ def key_handling(key_dir):
 #     res = {"digest_algorithms":[], "signing_algorithms":[]}
 #
 #     for elem in ed['extensions']['extension_elements']:
-#         if elem['__class__'] == '{}&DigestMethod'.format(algsupport.NAMESPACE):
+#         if elem['__class__'] == '{}&DigestMethod'.format(
+# algsupport.NAMESPACE):
 #             res['digest_algorithms'].append(elem['algorithm'])
 #         elif elem['__class__'] == '{}&SigningMethod'.format(
 #                 algsupport.NAMESPACE):
