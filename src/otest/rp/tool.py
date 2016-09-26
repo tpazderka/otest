@@ -228,7 +228,8 @@ class WebTester(tool.Tester):
             'issuer': _url,
             'profiles': list(self.kwargs['op_profiles'].keys()),
             'selected': self.selected,
-            'sid':sid
+            'sid':sid,
+            'base': self.base_url
         }
         return resp(self.inut.environ, self.inut.start_response, **kwargs)
 
