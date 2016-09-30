@@ -69,7 +69,8 @@ class WebIO(IO):
             "profile": info["profile_info"],
             "trace": info["trace"],
             "events": info["events"].to_html(),
-            "result": represent_result(_conv.events).replace("\n", "<br>\n")
+            "result": represent_result(_conv.events).replace("\n", "<br>\n"),
+            "base": self.base_url,
         }
 
         return resp(self.environ, self.start_response, **argv)
