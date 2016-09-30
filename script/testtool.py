@@ -46,7 +46,7 @@ base_formatter = logging.Formatter(
 
 hdlr.setFormatter(base_formatter)
 logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 ROOT = './'
 
@@ -236,7 +236,8 @@ class Application(object):
                     logger.info(
                         'Response type: {}, missing location'.format(
                             type(resp)))
-                    resp = ServiceError('Wrong response: {}'.resp.status)
+                    resp = ServiceError(
+                        'Wrong response: {}'.format(resp.status_code))
                 else:
                     # tester.conv.events.store('Cookie', resp.headers[
                     # 'set-cookie'])

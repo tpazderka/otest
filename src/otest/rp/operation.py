@@ -42,7 +42,7 @@ class Operation(operation.Operation):
                 return res
 
 
-class Login(Operation):
+class Init(Operation):
     start_page = ''
     endpoint = ''
 
@@ -56,7 +56,7 @@ class Login(Operation):
             loc = res.headers['location']
             self.conv.events.store('Cookie', res.headers['set-cookie'])
             logger.info('Redirect to {}'.format(loc))
-            self.conv.events.store(EV_REDIRECT_URL, loc, sub='login')
+            self.conv.events.store(EV_REDIRECT_URL, loc, sub='init')
             self.conv.trace.info("Received HTML: {}".format(res.text))
         elif res.status_code >= 400:
             logger.info('Error {}'.format(res.text))
