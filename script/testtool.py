@@ -148,7 +148,7 @@ class Application(object):
                 msg = {}
 
         filename = self.kwargs['profile_handler'](_sh).log_path(
-            sid, _sh['conv'].test_id)
+            sid=sid, test_id=_sh['conv'].test_id)
 
         _sh['conv'].entity_id = sid
         return tester.do_next(msg, filename,
@@ -225,8 +225,9 @@ class Application(object):
             self.session_conf[_sid] = sh
 
             resp = tester.run(_path, sid=_sid, **self.kwargs)
-            logger.info(
-                'Response class: {}'.format(resp.__class__.__name__))
+            if resp:
+                logger.info(
+                    'Response class: {}'.format(resp.__class__.__name__))
 
             if isinstance(resp, requests.Response):
                 try:
@@ -235,6 +236,7 @@ class Application(object):
                     logger.info(
                         'Response type: {}, missing location'.format(
                             type(resp)))
+                    resp = ServiceError('Wrong response: {}'.resp.status)
                 else:
                     # tester.conv.events.store('Cookie', resp.headers[
                     # 'set-cookie'])
@@ -242,8 +244,8 @@ class Application(object):
                         _path = loc[len(tester.base_url):]
                         if _path[0] == '/':
                             _path = _path[1:]
-
-                return resp
+                    resp = SeeOther(loc)
+                return resp(environ, start_response)
             elif resp is True or resp is False or resp is None:
                 return tester.display_test_list()
             else:
