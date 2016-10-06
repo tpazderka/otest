@@ -22,7 +22,7 @@ __author__ = 'roland'
 
 
 setup(
-    version = '0.0.1',
+    version = '0.1.0',
     name="otest",
     description="Basic Test framework for testing OAuth2/OIDC Authorization "
                 "server and relaying party implementations",
@@ -40,7 +40,6 @@ setup(
     install_requires=[
         "argparse",
         "requests >= 2.0.0",
-        'aatest',
         'pyYAML',
         'pycryptodomex',
         'oic',

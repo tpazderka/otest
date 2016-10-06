@@ -204,12 +204,14 @@ class Application(object):
             res = tester.display_test_list()
             return res
         elif _path == '' or _path == 'config':
-            sid = 'AAAAA'
+            sid = rndstr(24)
+            sh['sid'] = sid
             try:
                 args = sh['test_conf']
             except:
                 args = {}
-            # self.session_conf[sid] = sh
+
+            self.session_conf[sid] = sh
             # session['session_info'] = sh
             return tester.do_config(sid, **args)
         elif _path in self.kwargs['flows'].keys():  # Run flow
@@ -219,10 +221,12 @@ class Application(object):
             except KeyError:
                 resp = SeeOther('/')
                 return resp(environ, start_response)
-            # But will create a new OP
-            _sid = rndstr(24)
-            tester.sh['sid'] = _sid
-            self.session_conf[_sid] = sh
+            try:
+                _sid = tester.sh['sid']
+            except KeyError:
+                _sid = rndstr(24)
+                tester.sh['sid'] = _sid
+                self.session_conf[_sid] = sh
 
             resp = tester.run(_path, sid=_sid, **self.kwargs)
             if resp:

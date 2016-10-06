@@ -5,14 +5,12 @@ import logging
 import time
 import sys
 
-from oic.oauth2.message import Message
 from oic.utils.http_util import Response
 
-from aatest.events import EV_EXCEPTION
-from aatest.events import EV_PROTOCOL_RESPONSE
-from aatest.events import EV_RESPONSE
-
-from aatest.verify import Verify
+from otest.events import EV_EXCEPTION
+from otest.events import EV_PROTOCOL_RESPONSE
+from otest.events import EV_RESPONSE
+from otest.verify import Verify
 
 logger = logging.getLogger(__name__)
 

@@ -108,13 +108,15 @@ class WebApplication(object):
                 return resp
             else:
                 resp = SeeOther(
-                    "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
+                    "{}display#{}".format(self.webenv['base_url'],
+                                           self.pick_grp(sh['conv'].test_id)))
                 return resp(environ, start_response)
         elif _path == 'display':
             return inut.flow_list()
         elif _path == "opresult":
             resp = SeeOther(
-                "/display#{}".format(self.pick_grp(sh['conv'].test_id)))
+                "{}display#{}".format(self.webenv['base_url'],
+                                     self.pick_grp(sh['conv'].test_id)))
             return resp(environ, start_response)
         # expected _path format: /<testid>[/<endpoint>]
         elif _path in sh["flow_names"]:
@@ -129,8 +131,8 @@ class WebApplication(object):
             try:
                 #  return inut.flow_list()
                 resp = SeeOther(
-                    "/display#{}".format(
-                        self.pick_grp(_path)))
+                    "{}display#{}".format(self.webenv['base_url'],
+                                           self.pick_grp(sh['conv'].test_id)))
                 return resp(environ, start_response)
             except Exception as err:
                 logger.error(err)

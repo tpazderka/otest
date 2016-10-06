@@ -44,12 +44,12 @@ class ContentHandler(object):
         lead to an immediate break in processing, like a form action. Other
         URLs in the page will load local resources such as css and js without
         returning control.
-        :param conv: A aatest.Conversation instance
+        :param conv: A otest.Conversation instance
         :param verify_ssl: (True/False) whether the ssl certificates must
         be verified. Default is True
         :param cookie_jar: A http.cookiejar.CookieJar instance
         :param outside_html_actions: a dict describing buttons for the widget
         outside the html-area, to be used if the test must be aborted
-        :return: A aatest.contenthandler.HandlerResponse instance
+        :return: A otest.contenthandler.HandlerResponse instance
         """
         raise NotImplemented()

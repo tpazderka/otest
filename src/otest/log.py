@@ -2,12 +2,12 @@ import os
 import logging
 from six.moves.urllib.parse import unquote
 # from urllib.parse import unquote
-from aatest import Break
-from aatest import exception_trace
-from aatest.check import ERROR
-from aatest.check import State
-from aatest.check import WARNING
-from aatest.events import EV_CONDITION
+from otest import Break
+from otest import exception_trace
+from otest.check import ERROR
+from otest.check import State
+from otest.check import WARNING
+from otest.events import EV_CONDITION
 
 from oic.utils.http_util import Response
 

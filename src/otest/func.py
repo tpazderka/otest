@@ -8,15 +8,15 @@ from future.backports.urllib.parse import urlparse
 from future.backports.urllib.parse import urlencode
 
 from otest import ConfigurationError
+from otest.check import ERROR
+from otest.check import get_id_tokens
 from otest.check import State
 from otest.events import EV_CONDITION
 from otest.events import EV_RESPONSE
 from otest.tool import get_redirect_uris
-from otest.check import ERROR
 
 from oic.extension.message import make_software_statement
 from oic.utils.keyio import KeyBundle
-from otest.check import get_id_tokens
 
 __author__ = 'roland'
 
@@ -331,31 +331,6 @@ def resource(oper, args):
                                                       _p.netloc)
 
 
-def expect_exception(oper, args):
-    oper.expect_exception = args
-
-
-def conditional_expect_exception(oper, args):
-    condition = args["condition"]
-    exception = args["exception"]
-
-    res = True
-    for key in list(condition.keys()):
-        try:
-            assert oper.req_args[key] in condition[key]
-        except KeyError:
-            pass
-        except AssertionError:
-            res = False
-
-    try:
-        if res == args["oper"]:
-            oper.expect_exception = exception
-    except KeyError:
-        if res is True:
-            oper.expect_exception = exception
-
-
 def set_jwks_uri(oper, args):
     oper.req_args["jwks_uri"] = oper.conv.entity.jwks_uri
 
@@ -387,11 +362,6 @@ def restore_response(oper, arg):
         oper.conv.events.extend(oper.cache[key])
 
     del oper.cache[key]
-
-
-def skip_operation(oper, arg):
-    if oper.profile[0] in arg["flow_type"]:
-        oper.skip = True
 
 
 def rm_claim_from_assertion(oper, arg):
@@ -445,6 +415,16 @@ def add_software_statement(oper, arg):
 
     oper.req_args['software_statement'] = make_software_statement(
         oper.conv.entity.keyjar, iss=iss, owner=iss, **kwargs)
+
+
+def set_start_page(oper, args):
+    _conf = oper.sh['test_conf']
+    _url = _conf['start_page']
+    _iss = oper.conv.entity.baseurl
+    _params = _conf['params'].replace('<issuer>', _iss)
+    _args = dict([p.split('=') for p in _params.split('&')])
+    oper.start_page = _url + '?' + urlencode(_args)
+
 
 
 def factory(name):
