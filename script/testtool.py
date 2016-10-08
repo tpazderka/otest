@@ -159,6 +159,28 @@ class Application(object):
     def pick_grp(name):
         return name.split('-')[1]
 
+    def see_other_to_get(self, resp, sh):
+        loc = resp.message
+        res = sh['conv'].entity.server.http_request(loc, 'GET')
+        return res
+
+    def store_session_handler(self, sh):
+        sid = rndstr(24)
+        sh['sid'] = sid
+        self.session_conf[sid] = sh
+        return sid
+
+    def init_session(self, tester, sh):
+        sid = self.store_session_handler(sh)
+        # session['session_info'] = sh
+
+        try:
+            args = sh['test_conf']
+        except:
+            args = {}
+
+        return tester.do_config(sid, **args)
+
     # publishes the OP endpoints
     def application(self, environ, start_response):
         session = environ['beaker.session']
@@ -204,29 +226,19 @@ class Application(object):
             res = tester.display_test_list()
             return res
         elif _path == '' or _path == 'config':
-            sid = rndstr(24)
-            sh['sid'] = sid
-            try:
-                args = sh['test_conf']
-            except:
-                args = {}
-
-            self.session_conf[sid] = sh
-            # session['session_info'] = sh
-            return tester.do_config(sid, **args)
+            return self.init_session(tester, sh)
         elif _path in self.kwargs['flows'].keys():  # Run flow
+
             # Will use the same test configuration
             try:
                 _ = tester.sh['test_conf']
             except KeyError:
-                resp = SeeOther('/')
-                return resp(environ, start_response)
+                return self.init_session(tester, sh)
+
             try:
                 _sid = tester.sh['sid']
             except KeyError:
-                _sid = rndstr(24)
-                tester.sh['sid'] = _sid
-                self.session_conf[_sid] = sh
+                _sid = self.store_session_handler(sh)
 
             resp = tester.run(_path, sid=_sid, **self.kwargs)
             if resp:
@@ -242,15 +254,18 @@ class Application(object):
                             type(resp)))
                     resp = ServiceError(
                         'Wrong response: {}'.format(resp.status_code))
+                    return resp(environ, start_response)
                 else:
-                    # tester.conv.events.store('Cookie', resp.headers[
-                    # 'set-cookie'])
+                    tester.conv.events.store('Cookie',
+                                             resp.headers['set-cookie'])
+                    # For me !
                     if loc.startswith(tester.base_url):
                         _path = loc[len(tester.base_url):]
                         if _path[0] == '/':
                             _path = _path[1:]
-                    resp = SeeOther(loc)
-                return resp(environ, start_response)
+                    else:
+                        resp = SeeOther(loc)
+                        return resp(environ, start_response)
             elif resp is True or resp is False or resp is None:
                 return tester.display_test_list()
             else:
@@ -307,7 +322,14 @@ class Application(object):
             if _p[0] in _sh['conv'].entity.endpoints():
                 resp = self.handle(environ, tester, sid, *_p)
                 self.session_conf[sid] = tester.sh
-                return resp(environ, start_response)
+                # The only redirect should be the one to the redirect_uri
+                if isinstance(resp, SeeOther):
+                    res = self.see_other_to_get(resp, sh)
+                    # res is probably a redirect
+                    # send the user back to the test list page
+                    return inut.flow_list()
+                else:
+                    return resp(environ, start_response)
 
             for endpoint, service in self.endpoints.items():
                 if _path == endpoint:
