@@ -96,6 +96,12 @@ class SyncRequest(Request):
 
     def __init__(self, conv, inut, sh, **kwargs):
         Operation.__init__(self, conv, inut, sh, **kwargs)
+
+        try:
+            self.profile = self.profile.split('.')
+        except AttributeError:
+            pass
+
         self.conv.req = self
         self.tests = copy.deepcopy(self._tests)
         if self.request_cls:
@@ -246,6 +252,10 @@ class AsyncRequest(Request):
 
     def __init__(self, conv, inut, sh, **kwargs):
         Operation.__init__(self, conv, inut, sh, **kwargs)
+        try:
+            self.profile = self.profile.split('.')
+        except AttributeError:
+            pass
         self.conv.req = self
         self.trace = conv.trace
         self.tests = copy.deepcopy(self._tests)

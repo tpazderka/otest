@@ -2,8 +2,9 @@ import logging
 import os
 
 from future.backports.urllib.parse import parse_qs
+from oic.oauth2 import AuthorizationErrorResponse
+from oic.oauth2 import AuthorizationRequest
 from oic.utils.http_util import Redirect
-from oic.utils.http_util import SeeOther
 from oic.utils.http_util import Response
 
 from otest import ConditionError
@@ -243,8 +244,17 @@ class WebTester(tool.Tester):
         self.conv = sh['conv']
         cls, funcs = self.get_cls_and_func(self.conv.index+1)
         if cls.endpoint != path:
-            if path == 'authorization':  # redirect to starting point
-                return SeeOther(self.base_url)
+            if path == 'authorization':  # Jumping the gun here
+                areq = AuthorizationRequest().from_urlencoded(req)
+                # send an error back to the redirect_uri
+                msg = AuthorizationErrorResponse(error='access_denied',
+                                                 state=areq['state'])
+                _entity = self.conv.entity
+                redirect_uri = _entity.get_redirect_uri(areq)
+                _req_loc = msg.request(redirect_uri)
+                resp = _entity.server.http_request(_req_loc, 'GET')
+                ret = Response('Client need to reregister')
+                return ret
 
         self.handle_request(req, path)
 
