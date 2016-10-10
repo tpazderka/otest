@@ -256,8 +256,11 @@ class Application(object):
                         'Wrong response: {}'.format(resp.status_code))
                     return resp(environ, start_response)
                 else:
-                    tester.conv.events.store('Cookie',
-                                             resp.headers['set-cookie'])
+                    try:
+                        tester.conv.events.store('Cookie',
+                                                 resp.headers['set-cookie'])
+                    except KeyError:
+                        pass
                     # For me !
                     if loc.startswith(tester.base_url):
                         _path = loc[len(tester.base_url):]

@@ -136,13 +136,17 @@ class AuthorizationResponse(Response):
         _kwargs.update(self.op_args)
 
         _op = self.conv.entity
-        _cookie = self.conv.events.last_item('Cookie')
         try:
-            set_cookie(_op.server.cookiejar, SimpleCookie(_cookie))
-        except CookieError as err:
-            logger.error(err)
+            _cookie = self.conv.events.last_item('Cookie')
+        except NoSuchEvent:
+            pass
         else:
-            _kwargs['cookie'] = _op.server._cookies()
+            try:
+                set_cookie(_op.server.cookiejar, SimpleCookie(_cookie))
+            except CookieError as err:
+                logger.error(err)
+            else:
+                _kwargs['cookie'] = _op.server._cookies()
 
         resp = _op.authorization_endpoint(**_kwargs)
         return resp
