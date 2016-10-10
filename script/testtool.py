@@ -268,8 +268,12 @@ class Application(object):
                         if _path[0] == '/':
                             _path = _path[1:]
                     else:
-                        resp = SeeOther(loc)
-                        return resp(environ, start_response)
+                        logging.info('Redirect not to me')
+                        res = tester.conv.entity.server.http_request(loc)
+                        logging.info('{} response'.format(res.status_code))
+                        logging.debug('txt: {}'.format(res.text))
+                        res = tester.display_test_list()
+                        return res
             elif resp is True or resp is False or resp is None:
                 return tester.display_test_list()
             else:

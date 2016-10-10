@@ -59,6 +59,7 @@ class Init(Operation):
             except KeyError:
                 pass
             logger.info('Redirect to {}'.format(loc))
+            logger.debug('msg: {}'.format(res.text))
             self.conv.events.store(EV_REDIRECT_URL, loc, sub='init')
             self.conv.trace.info("Received HTML: {}".format(res.text))
         elif res.status_code >= 400:
