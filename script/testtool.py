@@ -12,7 +12,7 @@ from os.path import isdir
 from os.path import isfile
 from os.path import join
 
-from future.backports.urllib.parse import parse_qs
+from future.backports.urllib.parse import parse_qs, urlparse
 
 from mako.lookup import TemplateLookup
 
@@ -105,6 +105,13 @@ def start_page(environ, start_response, target):
 def make_entity(provider_cls, **as_args):
     return provider_cls(**as_args)
 
+
+def absolute_url(url, startpage):
+    if url.startswith('http'):
+        return url
+
+    (scheme, netloc, path, params, query, fragment) = urlparse(startpage)
+    return '{}://{}{}'.format(scheme, netloc, url)
 
 # =============================================================================
 
@@ -268,8 +275,10 @@ class Application(object):
                         if _path[0] == '/':
                             _path = _path[1:]
                     else:
-                        logging.info('Redirect not to me')
-                        res = tester.conv.entity.server.http_request(loc)
+                        _url = absolute_url(loc,
+                                            tester.sh['test_conf']['start_page'])
+                        logging.info('Redirect not to me => {}'.format(_url))
+                        res = tester.conv.entity.server.http_request(_url)
                         logging.info('{} response'.format(res.status_code))
                         logging.debug('txt: {}'.format(res.text))
                         res = tester.display_test_list()
