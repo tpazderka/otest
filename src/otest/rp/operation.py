@@ -54,7 +54,10 @@ class Init(Operation):
         self.conv.trace.info("Got a {} response".format(res.status_code))
         if res.status_code in [302, 303]:
             loc = res.headers['location']
-            self.conv.events.store('Cookie', res.headers['set-cookie'])
+            try:
+                self.conv.events.store('Cookie', res.headers['set-cookie'])
+            except KeyError:
+                pass
             logger.info('Redirect to {}'.format(loc))
             self.conv.events.store(EV_REDIRECT_URL, loc, sub='init')
             self.conv.trace.info("Received HTML: {}".format(res.text))
