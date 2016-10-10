@@ -253,7 +253,8 @@ class Application(object):
                         'Response type: {}, missing location'.format(
                             type(resp)))
                     resp = ServiceError(
-                        'Wrong response: {}'.format(resp.status_code))
+                        'Wrong response: {}:{}'.format(resp.status_code,
+                                                       resp.text))
                     return resp(environ, start_response)
                 else:
                     try:
