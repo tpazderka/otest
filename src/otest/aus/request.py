@@ -163,7 +163,9 @@ class SyncRequest(Request):
                         self.response, info=r.text,
                         sformat="json", state=state)
 
-            resp.verify(keyjar=self.conv.entity.keyjar)
+            _ent = self.conv.entity
+            resp.verify(keyjar=_ent.keyjar, client_id=_ent.client_id,
+                        iss=_ent.provider_info['issuer'])
         else:
             resp = r
 
