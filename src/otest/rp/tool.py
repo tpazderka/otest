@@ -129,6 +129,11 @@ class WebTester(tool.Tester):
         if index >= len(self.conv.sequence):
             return None
 
+        try:
+            internal = kw_args['internal']
+        except KeyError:
+            internal = True
+
         cls, funcs = self.get_cls_and_func(index)
 
         try:
@@ -141,7 +146,7 @@ class WebTester(tool.Tester):
             _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                         profile=self.profile, test_id=test_id,
                         funcs=funcs, check_factory=self.chk_factory,
-                        cache=self.cache)
+                        cache=self.cache, internal=internal)
             # self.conv.operation = _oper
             if profiles:
                 profile_map = profiles.PROFILEMAP
@@ -227,6 +232,11 @@ class WebTester(tool.Tester):
         else:
             _url = self.base_url
 
+        try:
+            test_id = args['test_id']
+        except KeyError:
+            test_id = ''
+
         kwargs = {
             'start_page': start_page,
             'params': params,
@@ -234,7 +244,8 @@ class WebTester(tool.Tester):
             'profiles': list(self.kwargs['op_profiles'].keys()),
             'selected': self.selected,
             'sid':sid,
-            'base': self.base_url
+            'base': self.base_url,
+            'test_id': test_id
         }
         return resp(self.inut.environ, self.inut.start_response, **kwargs)
 

@@ -62,6 +62,10 @@ class Operation(object):
         self.allowed_status_codes = [200]
         # detach
         self.tests = copy.deepcopy(self._tests)
+        try:
+            self.internal = kwargs['internal']
+        except KeyError:
+            self.internal = True
 
     def run(self, *args, **kwargs):
         pass

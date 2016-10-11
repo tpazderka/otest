@@ -36,6 +36,13 @@ from otest.rp.io import WebIO
 from otest.rp.setup import as_arg_setup
 from otest.rp.tool import WebTester
 
+try:
+    from requests.packages import urllib3
+except ImportError:
+    pass
+else:
+    urllib3.disable_warnings()
+
 __author__ = 'roland'
 
 logger = logging.getLogger("")
@@ -123,6 +130,7 @@ class Application(object):
         self.events = Events()
         self.endpoints = {}
         self.session_conf = {}
+        self.internal = kwargs['internal']
 
     def store_response(self, response):
         self.events.store(EV_RESPONSE, response.info())
@@ -173,20 +181,75 @@ class Application(object):
 
     def store_session_handler(self, sh):
         sid = rndstr(24)
+        while sid in self.session_conf:
+            sid = rndstr(24)
         sh['sid'] = sid
         self.session_conf[sid] = sh
         return sid
 
-    def init_session(self, tester, sh):
+    def init_session(self, tester, sh, test_id=''):
         sid = self.store_session_handler(sh)
         # session['session_info'] = sh
+        try:
+            del self.session_conf[sid]['flow']
+        except KeyError:
+            pass
 
         try:
             args = sh['test_conf']
         except:
             args = {}
 
+        args['test_id'] = test_id
         return tester.do_config(sid, **args)
+
+    def run_test(self, tester, _path, _sid, environ, start_response):
+        resp = tester.run(_path, sid=_sid, **self.kwargs)
+        if resp:
+            logger.info(
+                'Response class: {}'.format(resp.__class__.__name__))
+
+        if isinstance(resp, requests.Response):
+            try:
+                loc = resp.headers['location']
+            except KeyError:
+                logger.info(
+                    'Response type: {}, missing location'.format(
+                        type(resp)))
+                resp = ServiceError(
+                    'Wrong response: {}:{}'.format(resp.status_code,
+                                                   resp.text))
+                return resp(environ, start_response), 0
+            else:
+                try:
+                    tester.conv.events.store('Cookie',
+                                             resp.headers['set-cookie'])
+                except KeyError:
+                    pass
+                # For me !
+                if loc.startswith(tester.base_url):
+                    _path = loc[len(tester.base_url):]
+                    if _path[0] == '/':
+                        _path = _path[1:]
+                    return (0, _path)
+                else:
+                    if self.internal:
+                        _url = absolute_url(loc,
+                                            tester.sh['test_conf'][
+                                                'start_page'])
+                        logging.info('Redirect not to me => {}'.format(_url))
+                        res = tester.conv.entity.server.http_request(_url)
+                        logging.info('{} response'.format(res.status_code))
+                        logging.debug('txt: {}'.format(res.text))
+                        res = tester.display_test_list()
+                        return res, 0
+                    else:
+                        res = SeeOther(loc)
+                        return res(environ, start_response), 0
+        elif resp is True or resp is False or resp is None:
+            return tester.display_test_list(), 0
+        else:
+            return resp(environ, start_response), 0
 
     # publishes the OP endpoints
     def application(self, environ, start_response):
@@ -225,17 +288,24 @@ class Application(object):
                 qs = parse_qs(get_or_post(environ))
             except Exception as err:
                 jlog.error({'message': err})
+                qs = {}
             else:
                 if qs:
                     sh['test_conf'] = dict([(k, v[0]) for k, v in qs.items()])
                     # self.session_conf[sh['sid']] = sh
 
-            res = tester.display_test_list()
-            return res
+            if 'test_id' in qs:
+                (res, _path) = self.run_test(tester, qs['test_id'][0],
+                                             sh['sid'], environ,
+                                             start_response)
+                if res:
+                    return res
+            else:
+                res = tester.display_test_list()
+                return res
         elif _path == '' or _path == 'config':
             return self.init_session(tester, sh)
         elif _path in self.kwargs['flows'].keys():  # Run flow
-
             # Will use the same test configuration
             try:
                 _ = tester.sh['test_conf']
@@ -247,46 +317,18 @@ class Application(object):
             except KeyError:
                 _sid = self.store_session_handler(sh)
 
-            resp = tester.run(_path, sid=_sid, **self.kwargs)
-            if resp:
-                logger.info(
-                    'Response class: {}'.format(resp.__class__.__name__))
-
-            if isinstance(resp, requests.Response):
-                try:
-                    loc = resp.headers['location']
-                except KeyError:
-                    logger.info(
-                        'Response type: {}, missing location'.format(
-                            type(resp)))
-                    resp = ServiceError(
-                        'Wrong response: {}:{}'.format(resp.status_code,
-                                                       resp.text))
-                    return resp(environ, start_response)
-                else:
-                    try:
-                        tester.conv.events.store('Cookie',
-                                                 resp.headers['set-cookie'])
-                    except KeyError:
-                        pass
-                    # For me !
-                    if loc.startswith(tester.base_url):
-                        _path = loc[len(tester.base_url):]
-                        if _path[0] == '/':
-                            _path = _path[1:]
-                    else:
-                        _url = absolute_url(loc,
-                                            tester.sh['test_conf']['start_page'])
-                        logging.info('Redirect not to me => {}'.format(_url))
-                        res = tester.conv.entity.server.http_request(_url)
-                        logging.info('{} response'.format(res.status_code))
-                        logging.debug('txt: {}'.format(res.text))
-                        res = tester.display_test_list()
-                        return res
-            elif resp is True or resp is False or resp is None:
-                return tester.display_test_list()
+            # First time around this should not be set
+            try:
+                _ = self.session_conf[_sid]['flow']
+            except KeyError:
+                pass
             else:
-                return resp(environ, start_response)
+                return self.init_session(tester, sh, _path)
+
+            (res, _path) = self.run_test(tester, _path, _sid, environ,
+                                         start_response)
+            if res:
+                return res
         elif _path == 'display':
             return inut.flow_list()
         elif _path == "opresult":
@@ -341,10 +383,13 @@ class Application(object):
                 self.session_conf[sid] = tester.sh
                 # The only redirect should be the one to the redirect_uri
                 if isinstance(resp, SeeOther):
-                    res = self.see_other_to_get(resp, sh)
-                    # res is probably a redirect
-                    # send the user back to the test list page
-                    return inut.flow_list()
+                    if self.internal:
+                        res = self.see_other_to_get(resp, sh)
+                        # res is probably a redirect
+                        # send the user back to the test list page
+                        return inut.flow_list()
+                    else:
+                        return resp(environ, start_response)
                 else:
                     return resp(environ, start_response)
 
@@ -428,6 +473,9 @@ if __name__ == '__main__':
     parser.add_argument('-y', dest='yaml_flow', action='append',
                         help='Test descriptions in YAML format')
     parser.add_argument('-r', dest='rsa_key_dir', default='keys')
+    parser.add_argument(
+        '-i', dest='internal', action='store_true',
+        help='Whether the server should handle all communication internally')
     parser.add_argument('-m', dest='path2port')
     parser.add_argument('-w', dest='cwd', help='change working directory')
     parser.add_argument(
@@ -502,7 +550,8 @@ if __name__ == '__main__':
               'trace_cls': Trace, 'lookup': LOOKUP,
               'make_entity': make_entity, 'base_dir': base_dir,
               'signing_key': keys, 'provider_cls': tool_args['provider'],
-              'as_args': as_args, 'response_cls': http_util.Response
+              'as_args': as_args, 'response_cls': http_util.Response,
+              'internal': args.internal
               }
 
     if args.ca_certs:

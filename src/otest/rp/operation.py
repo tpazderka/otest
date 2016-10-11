@@ -4,6 +4,7 @@ import sys
 
 from future.backports.http.cookies import CookieError
 from future.backports.http.cookies import SimpleCookie
+from oic.utils.http_util import SeeOther
 
 from otest import operation
 from otest import OperationError
@@ -49,7 +50,11 @@ class Init(Operation):
     def run(self, **kwargs):
         self.conv.events.store('start_page', self.start_page)
         self.conv.trace.info("Doing GET on {}".format(self.start_page))
-        res = self.conv.entity.server.http_request(self.start_page)
+        if self.internal:
+            res = self.conv.entity.server.http_request(self.start_page)
+        else:
+            res = SeeOther(self.start_page)
+            return res
         self.conv.events.store(EV_HTTP_RESPONSE, res)
         self.conv.trace.info("Got a {} response".format(res.status_code))
         if res.status_code in [302, 303]:
