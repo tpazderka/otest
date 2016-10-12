@@ -2,7 +2,7 @@ import logging
 import os
 
 from future.backports.urllib.parse import parse_qs
-from oic.oauth2 import AuthorizationErrorResponse
+from oic.oauth2 import AuthorizationErrorResponse, PyoidcError
 from oic.oauth2 import AuthorizationRequest
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
@@ -206,20 +206,25 @@ class WebTester(tool.Tester):
 
     def handle_request(self, req, path=''):
         self.conv.events.store(EV_REQUEST, req)
+        logging.debug('Raw request: {}'.format(req))
         if req:
             func = getattr(self.conv.entity.server,
                            'parse_{}_request'.format(path))
 
             msg = None
-            if req[0] in ['{', '[']:
-                msg = func(req, sformat='json')
-            else:
-                if path in ['authorization', 'check_session']:
-                    msg = func(query=req)  # default urlencoded
-                elif path in ['token', 'refresh_token']:
-                    msg = func(body=req)
+            try:
+                if req[0] in ['{', '[']:
+                    msg = func(req, sformat='json')
                 else:
-                    msg = func(req)
+                    if path in ['authorization', 'check_session']:
+                        msg = func(query=req)  # default urlencoded
+                    elif path in ['token', 'refresh_token']:
+                        msg = func(body=req)
+                    else:
+                        msg = func(req)
+            except PyoidcError as err:
+                logging.error('{}'.format(err))
+
             if msg:
                 self.conv.events.store(EV_PROTOCOL_REQUEST, msg)
 
