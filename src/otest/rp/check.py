@@ -260,7 +260,6 @@ class VerifyAuthorizationStateEntropy(Check):
             self._status = ERROR
             self._message = "No AuthorizationRequest"
         else:
-
             bits = calculate(request['state'])
             if bits < 128:
                 self._status = WARNING

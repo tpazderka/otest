@@ -119,7 +119,9 @@ class RegistrationResponse(Response):
         req = self.conv.events.last_item(EV_REQUEST)
         resp = self.conv.entity.registration_endpoint(req)
         if resp.status == '200 OK':
-            self.conv.events.store(EV_RESPONSE, resp.message, direction=OUTGOING)
+            logging.debug('Registration response: {}'.format(resp.message))
+            self.conv.events.store(EV_RESPONSE, resp.message,
+                                   direction=OUTGOING)
         return resp
 
 
