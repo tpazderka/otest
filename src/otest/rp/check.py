@@ -91,7 +91,8 @@ class VerifyRegistrationResponseTypes(Check):
                 except KeyError:
                     if len(resp_types) > 1:
                         self._status = WARNING
-                        self._message = 'Only allowed to register one response type'
+                        self._message = 'Only allowed to register one ' \
+                                        'response type'
                     elif resp_types[0] not in ['code', 'token']:
                         self._status = ERROR
                         self._message = 'Not allowed response type'
@@ -242,7 +243,8 @@ class VerifyAuthorizationOfflineAccess(Check):
                 if 'offline_access' in req_scopes:
                     if request['response_type'] != ['code']:
                         self._status = ERROR
-                        self._message = 'Offline access only when using "code" flow'
+                        self._message = 'Offline access only when using ' \
+                                        '"code" flow'
 
         return {}
 
@@ -252,13 +254,18 @@ class VerifyAuthorizationStateEntropy(Check):
     msg = "Check if offline access is requested"
 
     def _func(self, conv):
-        request = authorization_request(conv)
+        try:
+            request = authorization_request(conv)
+        except NoSuchEvent:
+            self._status = ERROR
+            self._message = "No AuthorizationRequest"
+        else:
 
-        bits = calculate(request['state'])
-        if bits < 128:
-            self._status = WARNING
-            self._message = 'Not enough entropy in string: {} < 128'.format(
-                bits)
+            bits = calculate(request['state'])
+            if bits < 128:
+                self._status = WARNING
+                self._message = 'Not enough entropy in string: {} < 128'.format(
+                    bits)
         return {}
 
 
@@ -272,11 +279,16 @@ class VerifyAuthorizationRedirectUri(Check):
         except NoSuchEvent:
             self._status = ERROR
         else:
-            authz_request = authorization_request(conv)
-
-            if authz_request['redirect_uri'] not in clireq_request['redirect_uris']:
+            try:
+                authz_request = authorization_request(conv)
+            except NoSuchEvent:
                 self._status = ERROR
-                self._message = 'Redirect_uri not registered'
+                self._message = 'No AuthorizationRequest'
+            else:
+                if authz_request['redirect_uri'] not in clireq_request[
+                    'redirect_uris']:
+                    self._status = ERROR
+                    self._message = 'Redirect_uri not registered'
 
         return {}
 
