@@ -390,8 +390,10 @@ class Application(object):
                         return inut.flow_list()
                     else:
                         return resp(environ, start_response)
-                else:
+                elif isinstance(resp, Response):
                     return resp(environ, start_response)
+                else:
+                    return resp
 
             for endpoint, service in self.endpoints.items():
                 if _path == endpoint:
