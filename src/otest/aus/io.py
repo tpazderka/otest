@@ -61,7 +61,8 @@ class WebIO(IO):
             "test_info": list(self.session["test_info"].keys()),
             "base": self.base_url,
             "headlines": self.desc,
-            "testresults": TEST_RESULTS
+            "testresults": TEST_RESULTS,
+            'base': self.base_url
         }
 
         return resp(self.environ, self.start_response, **argv)
@@ -85,7 +86,8 @@ class WebIO(IO):
             "profile": info["profile_info"],
             "trace": info["trace"],
             "events": info["events"],
-            "result": represent_result(_conv.events).replace("\n", "<br>\n")
+            "result": represent_result(_conv.events).replace("\n", "<br>\n"),
+            'base': self.base_url
         }
 
         return resp(self.environ, self.start_response, **argv)
@@ -190,8 +192,11 @@ class WebIO(IO):
         resp = Response(mako_template="sorry.mako",
                         template_lookup=self.lookup,
                         headers=[])
-        argv = {"htmlpage": homepage,
-                "error": str(err)}
+        argv = {
+            "htmlpage": homepage,
+            "error": str(err),
+            'base': self.base_url
+        }
         return resp(self.environ, self.start_response, **argv)
 
     def opresult(self, conv):
