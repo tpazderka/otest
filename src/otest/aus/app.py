@@ -184,8 +184,9 @@ class WebApplication(object):
                 try:
                     # return inut.flow_list()
                     resp = SeeOther(
-                        "/display#{}".format(
-                            self.pick_grp(sh['conv'].test_id)))
+                        "{}display#{}".format(self.webenv['base_url'],
+                                              self.pick_grp(
+                                                  sh['conv'].test_id)))
                     return resp(environ, start_response)
                 except Exception as err:
                     logger.error(err)

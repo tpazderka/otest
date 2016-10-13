@@ -191,6 +191,7 @@ class Note(Notice):
                 self.conv.entity.base_url, self.test_id, self.sh["index"]),
             "back": self.conv.entity.base_url,
             "note": self.message,
+            "base": self.conv.entity.base_url
         }
 
 
