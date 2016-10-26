@@ -2,31 +2,25 @@ import json
 
 
 class JLog(object):
-    def __init__(self, logger, sid):
+    def __init__(self, logger, sid, tag='JLOG'):
         self.logger = logger
         self.id = sid
+        self.tag = tag
+
+    def _msg(self, info):
+        return '<<{}:{}>> {}'.format(self.tag, self.id, json.dumps(info))
 
     def info(self, info):
-        _dict = {'id': self.id}
-        _dict.update(info)
-        self.logger.info(json.dumps(_dict))
+        self.logger.info(self._msg(info))
 
     def debug(self, info):
-        _dict = {'id': self.id}
-        _dict.update(info)
-        self.logger.debug(json.dumps(_dict))
+        self.logger.debug(self._msg(info))
 
     def exception(self, info):
-        _dict = {'id': self.id}
-        _dict.update(info)
-        self.logger.exception(json.dumps(_dict))
+        self.logger.exception(self._msg(info))
 
     def error(self, info):
-        _dict = {'id': self.id}
-        _dict.update(info)
-        self.logger.error(json.dumps(_dict))
+        self.logger.error(self._msg(info))
 
     def warning(self, info):
-        _dict = {'id': self.id}
-        _dict.update(info)
-        self.logger.warning(json.dumps(_dict))
+        self.logger.warning(self._msg(info))
