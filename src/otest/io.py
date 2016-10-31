@@ -33,7 +33,7 @@ class IO(object):
 
         try:
             res = Result(self.session, self.profile_handler)
-            res.print_info(self.session["testid"])
+            res.write_info(self.session["testid"])
             res.store_test_info()
         except KeyError:
             pass

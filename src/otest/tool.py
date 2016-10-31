@@ -3,6 +3,7 @@ import logging
 from otest import ConditionError
 from otest import Done
 from otest import exception_trace
+from otest import Trace
 from otest.check import OK
 from otest.check import State
 from otest.conversation import Conversation
@@ -17,10 +18,15 @@ logger = logging.getLogger(__name__)
 
 
 def get_redirect_uris(cinfo):
+    """
+    Used before there is a Conversation instance
+    :param cinfo: Client Configuration Information
+    :return: list of redirect_uris
+    """
     try:
-        return cinfo["client"]["redirect_uris"]
+        return cinfo["registration_info"]["redirect_uris"]
     except KeyError:
-        return cinfo["registered"]["redirect_uris"]
+        return cinfo["registration_response"]["redirect_uris"]
 
 
 class ConfigurationError(Exception):
@@ -52,21 +58,20 @@ class Tester(object):
         return self.map_prof(self.profile.split("."),
                              _spec["profile"].split("."))
 
-    def setup(self, test_id, cinfo, **kw_args):
-        if not self.match_profile(test_id):
-            return False
+    def setup(self, test_id, **kw_args):
+        redirs = get_redirect_uris(kw_args['client_info'])
 
-        redirs = get_redirect_uris(cinfo)
-
-        self.sh.session_setup(path=test_id)
         _flow = self.flows[test_id]
-        _cli = self.make_entity(**kw_args)
-        self.conv = Conversation(_flow, _cli, redirs, kw_args["msg_factory"],
-                                 trace_cls=self.trace_cls)
+        _cli, _cli_info = self.make_entity(**kw_args['client_info'])
+        self.conv = Conversation(_flow, _cli, kw_args["msg_factory"],
+                                 trace_cls=Trace, callback_uris=redirs)
+        self.conv.entity_config = _cli_info
+        self.conv.tool_config = kw_args['conf'].TOOL
         _cli.conv = self.conv
-        self.com_handler.conv = self.conv
-        self.conv.sequence = self.sh["sequence"]
+        _cli.event_store = self.conv.events
+        self.sh.session_setup(path=test_id)
         self.sh["conv"] = self.conv
+        self.conv.sequence = self.sh["sequence"]
         return True
 
     def run(self, test_id, **kw_args):
@@ -131,7 +136,7 @@ class Tester(object):
             except ConditionError:
                 store_test_state(self.sh, self.conv.events)
                 res.store_test_info()
-                res.print_info(test_id, self.fname(test_id))
+                res.write_info(test_id, self.fname(test_id))
                 return False
             except Exception as err:
                 exception_trace('run_flow', err)
@@ -139,7 +144,7 @@ class Tester(object):
                 #self.sh["index"] = index
                 store_test_state(self.sh, self.conv.events)
                 res.store_test_info()
-                res.print_info(test_id, self.fname(test_id))
+                res.write_info(test_id, self.fname(test_id))
                 return False
             else:
                 if isinstance(resp, self.response_cls):
@@ -161,7 +166,7 @@ class Tester(object):
             except ConditionError:
                 store_test_state(self.sh, self.conv.events)
                 res.store_test_info()
-                res.print_info(test_id, self.fname(test_id))
+                res.write_info(test_id, self.fname(test_id))
                 return False
 
             index += 1
@@ -183,7 +188,7 @@ class Tester(object):
                                    sender='run_flow')
             store_test_state(self.sh, self.conv.events)
             res.store_test_info()
-            res.print_info(test_id, self.fname(test_id))
+            res.write_info(test_id, self.fname(test_id))
         else:
             store_test_state(self.sh, self.conv.events)
             res.store_test_info()

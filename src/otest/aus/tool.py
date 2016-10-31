@@ -12,11 +12,9 @@ from otest import CRYPTSUPPORT
 from otest import Done
 from otest import exception_trace
 from otest import tool
-from otest import Trace
 from otest.check import ERROR
 from otest.check import OK
 from otest.check import State
-from otest.conversation import Conversation
 from otest.events import EV_CONDITION
 from otest.events import EV_REDIRECT_URL
 from otest.io import eval_state
@@ -28,13 +26,6 @@ from otest.verify import Verify
 __author__ = 'roland'
 
 logger = logging.getLogger(__name__)
-
-
-def get_redirect_uris(cinfo):
-    try:
-        return cinfo["client"]["redirect_uris"]
-    except KeyError:
-        return cinfo["registered"]["redirect_uris"]
 
 
 class Tester(tool.Tester):
@@ -100,14 +91,17 @@ class Tester(tool.Tester):
                     State(test_id=test_id, status=ERROR, message=err,
                           context=cls.__name__))
                 exception_trace(cls.__name__, err, logger)
+                self.conv.trace.error('Operation failed: {}'.format(err))
                 self.sh["index"] = index
                 res.store_test_info()
+                res.write_info(test_id)
                 store_test_state(self.sh, self.conv.events)
                 return self.inut.err_response("run_sequence", err)
             else:
                 rsp = self.handle_response(resp, index)
                 if rsp:
                     res.store_test_info()
+                    res.write_info(test_id)
                     store_test_state(self.sh, self.conv.events)
                     return self.inut.respond(rsp)
 
@@ -124,12 +118,10 @@ class Tester(tool.Tester):
                 raise
 
             self.conv.events.store(EV_CONDITION, State('Done', status=OK))
-            store_test_state(self.sh, self.conv.events)
-            res.store_test_info()
-            res.print_info(test_id, self.fname(test_id))
-        else:
-            store_test_state(self.sh, self.conv.events)
-            res.store_test_info()
+
+        store_test_state(self.sh, self.conv.events)
+        res.store_test_info()
+        res.write_info(test_id)
 
         if eval_state(self.conv.events) == OK:
             return True
@@ -201,22 +193,6 @@ class WebTester(Tester):
         except Exception as err:
             return self.inut.err_response("profile", err)
 
-    def setup(self, test_id, cinfo, **kw_args):
-        redirs = get_redirect_uris(cinfo)
-
-        _flow = self.flows[test_id]
-        _cli = self.make_entity(**kw_args)
-        self.conv = Conversation(_flow, _cli, kw_args["msg_factory"],
-                                 trace_cls=Trace, callback_uris=redirs)
-        # _cli.conv = self.conv
-        _cli.event_store = self.conv.events
-        # since webfinger is not used
-        self.conv.info['issuer'] = kw_args['conf'].INFO["srv_discovery_url"]
-        self.sh.session_setup(path=test_id)
-        self.sh["conv"] = self.conv
-        self.conv.sequence = self.sh["sequence"]
-        return True
-
     def handle_response(self, resp, index, oper=None):
         if resp:
             self.sh["index"] = index
@@ -234,7 +210,7 @@ class WebTester(Tester):
         sess['node'].complete = complete
         sess['node'].state = eval_state(sess['conv'].events)
         res = Result(sess, self.kwargs['profile_handler'])
-        res.print_info(test_id, self.fname(test_id))
+        res.write_info(test_id)
 
     def cont(self, environ, ENV):
         query = parse_qs(environ["QUERY_STRING"])
@@ -261,7 +237,7 @@ class WebTester(Tester):
         except Exception as err:
             exception_trace("", err, logger)
             res = Result(self.sh, self.kwargs['profile_handler'])
-            res.print_info(path)
+            res.write_info(path)
             return self.inut.err_response("run", err)
 
     def async_response(self, conf):

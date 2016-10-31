@@ -46,6 +46,25 @@ def get_profile_info(session, test_id=None):
     return {}
 
 
+def make_client(**kw_args):
+    """
+    Have to get own copy of keyjar
+
+    :param kw_args:
+    :return:
+    """
+    c_keyjar = kw_args["keyjar"].copy()
+    _cli = Client(client_authn_method=CLIENT_AUTHN_METHOD, keyjar=c_keyjar)
+
+    c_info = {'keyjar': c_keyjar}
+    for arg, val in list(kw_args.items()):
+        if arg in ['keyjar']:
+            continue
+        setattr(_cli, arg, val)
+        c_info[arg] = val
+
+    return _cli, c_info
+
 # def get_check(check_id):
 #     package = ocheck
 #     prefix = package.__name__ + "."

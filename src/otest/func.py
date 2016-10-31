@@ -13,6 +13,7 @@ from otest.check import get_id_tokens
 from otest.check import State
 from otest.events import EV_CONDITION
 from otest.events import EV_RESPONSE
+from otest.result import get_issuer
 from otest.tool import get_redirect_uris
 
 from oic.extension.message import make_software_statement
@@ -115,12 +116,12 @@ def set_webfinger_resource(oper, args):
     try:
         oper.resource = oper.op_args["resource"]
     except KeyError:
-        oper.resource = oper.conf.ISSUER
+        oper.resource = get_issuer(oper.conv)
 
 
 def set_discovery_issuer(oper, args):
     if oper.dynamic:
-        oper.op_args["issuer"] = oper.conv.info["issuer"]
+        oper.op_args["issuer"] = get_issuer(oper.conv)
 
 
 def redirect_uri_with_query_component(oper, args):
@@ -234,7 +235,7 @@ def id_token_hint(oper, kwargs):
 
 
 def login_hint(oper, args):
-    _iss = oper.conv.entity.provider_info["issuer"]
+    _iss = get_issuer(oper.conv)
     p = urlparse(_iss)
     try:
         hint = oper.conv.entity_config["login_hint"]
@@ -326,7 +327,7 @@ def request_in_file(oper, kwargs):
 
 
 def resource(oper, args):
-    _p = urlparse(oper.conv.conf.ISSUER)
+    _p = urlparse(get_issuer(oper.conv))
     oper.op_args["resource"] = args["pattern"].format(oper.conv.test_id,
                                                       _p.netloc)
 

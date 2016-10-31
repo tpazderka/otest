@@ -64,11 +64,11 @@ class WebApplication(object):
             return inut.display_log("log", issuer="", profile="", testid="")
         elif _path.startswith("log"):
             if _path == "log" or _path == "log/":
-                _cc = inut.conf.CLIENT
                 try:
-                    _iss = _cc["srv_discovery_url"]
+                    _iss = inut.conf.CLIENT["provider_info"]["issuer"]
                 except KeyError:
-                    _iss = _cc["provider_info"]["issuer"]
+                    _iss = inut.conf.ISSUER
+
                 parts = [quote_plus(_iss)]
             else:
                 parts = []
@@ -131,8 +131,9 @@ class WebApplication(object):
             try:
                 #  return inut.flow_list()
                 resp = SeeOther(
-                    "{}display#{}".format(self.webenv['base_url'],
-                                           self.pick_grp(sh['conv'].test_id)))
+                    "{}display#{}".format(
+                        self.webenv['client_info']['base_url'],
+                        self.pick_grp(sh['conv'].test_id)))
                 return resp(environ, start_response)
             except Exception as err:
                 logger.error(err)
@@ -184,9 +185,9 @@ class WebApplication(object):
                 try:
                     # return inut.flow_list()
                     resp = SeeOther(
-                        "{}display#{}".format(self.webenv['base_url'],
-                                              self.pick_grp(
-                                                  sh['conv'].test_id)))
+                        "{}display#{}".format(
+                            self.webenv['client_info']['base_url'],
+                            self.pick_grp(sh['conv'].test_id)))
                     return resp(environ, start_response)
                 except Exception as err:
                     logger.error(err)

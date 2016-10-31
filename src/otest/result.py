@@ -1,3 +1,4 @@
+import logging
 import os
 
 from future.backports.urllib.parse import quote
@@ -12,10 +13,21 @@ from otest.summation import trace_output
 from otest.summation import eval_state
 from otest.time_util import in_a_while
 
-
 SIGN = {OK: "+", WARNING: "!", ERROR: "-", INCOMPLETE: "?"}
 TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
                 INCOMPLETE: "INCOMPLETE"}
+
+logger = logging.getLogger(__name__)
+
+
+def get_issuer(conv):
+    try:
+        return conv.entity.provider_info['issuer']
+    except KeyError:
+        try:
+            return conv.tool_config['issuer']
+        except KeyError:
+            return 'unknown'
 
 
 def safe_path(eid, *args):
@@ -53,7 +65,12 @@ class Result(object):
                 raise
         return {}
 
-    def print_info(self, test_id, filename=''):
+    def write_info(self, test_id, file_name=None):
+        if file_name is None:
+            file_name = safe_path(get_issuer(self.session['conv']),
+                                  self.session['profile'],
+                                  self.session['testid'])
+
         if 'conv' not in self.session:
             return
         else:
@@ -85,19 +102,16 @@ class Result(object):
 
         txt = "\n".join(output)
 
-        if filename:
-            f = open(filename, 'w')
-            f.write(txt)
-            f.close()
-        else:
-            print(txt)
+        f = self._open_file(file_name, 'w')
+        f.write(txt)
+        f.close()
 
-    def store_test_info(self, profile_info=None):
+    def _test_info(self, profile_info=None):
         _info = {
             "descr": self.session["node"].desc,
             "events": self.session["conv"].events,
             "index": self.session["index"],
-            #"seqlen": len(self.session["seq_info"]["sequence"]),
+            # "seqlen": len(self.session["seq_info"]["sequence"]),
             "test_output": self.session["conv"].events.get('condition'),
             "trace": self.session["conv"].trace,
         }
@@ -112,4 +126,38 @@ class Result(object):
         else:
             _info['profile_info'] = self._profile_info(self.session["testid"])
 
-        self.session["test_info"][self.session["testid"]] = _info
+        return _info
+
+    def store_test_info(self, profile_info=None):
+        self.session["test_info"][self.session["testid"]] = self._test_info(
+            profile_info)
+
+    def _open_file(self, file_name, mode='w'):
+        try:
+            fp = open(file_name, mode)
+        except IOError:
+            try:
+                os.makedirs(os.path.dirname(file_name))
+            except OSError:
+                pass
+
+            try:
+                fp = open(file_name, mode)
+            except Exception as err:
+                logger.error(
+                    "Couldn't dump to log file {} reason: {}").format(
+                    file_name, err)
+                raise
+        return fp
+
+    def dump_log(self):
+        file_name = safe_path(self.session['conv'].conf.ISSUER,
+                              self.session['profile'], self.session['testid'])
+
+        _info = self._test_info()
+
+        fp = self._open_file(file_name)
+
+        fp.write("{0}".format(_info))
+        fp.write("\n\n")
+        fp.close()

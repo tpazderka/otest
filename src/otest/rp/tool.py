@@ -101,7 +101,7 @@ class WebTester(tool.Tester):
         self.conv.events.store(EV_CONDITION, State('Done', OK))
         store_test_state(self.sh, self.conv.events)
         res.store_test_info()
-        res.print_info(test_id, self.fname(test_id))
+        res.write_info(test_id, self.fname(test_id))
 
     def get_cls_and_func(self, index):
         item = self.conv.sequence[index]
@@ -157,7 +157,7 @@ class WebTester(tool.Tester):
         except ConditionError:
             store_test_state(self.sh, self.conv.events)
             res.store_test_info()
-            res.print_info(test_id, self.fname(test_id))
+            res.write_info(test_id, self.fname(test_id))
             return False
         except Exception as err:
             exception_trace('run_flow', err)
@@ -181,7 +181,7 @@ class WebTester(tool.Tester):
         except ConditionError:
             store_test_state(self.sh, self.conv.events)
             res.store_test_info()
-            res.print_info(test_id, self.fname(test_id))
+            res.write_info(test_id, self.fname(test_id))
             return False
 
         _ss['index'] = self.conv.index = index + 1
@@ -288,7 +288,7 @@ class WebTester(tool.Tester):
 
         store_test_state(sh, sh['conv'].events)
         if isinstance(resp, Response):
-            res.print_info(path, filename)
+            res.write_info(path, filename)
             return resp
 
         _done = False

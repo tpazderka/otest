@@ -9,7 +9,6 @@ __author__ = 'roland'
 logger = logging.getLogger(__name__)
 
 
-
 class Conversation(object):
     def __init__(self, flow, entity, msg_factory, check_factory=None,
                  features=None, trace_cls=Trace, interaction=None, opid=None,
@@ -32,6 +31,8 @@ class Conversation(object):
         self.sequence = []
         self.trace.info('Conversation initiated')
         self.cache = {}
+        self.tool_config = {}
+        self.conf = None
 
     def dump_state(self, filename):
         state = {
@@ -60,3 +61,34 @@ class Conversation(object):
         _fh = open(filename, "w")
         _fh.write(txt)
         _fh.close()
+
+    def get_tool_attribute(self, *attr, default=None):
+        """
+        Return the tool configuration attribute value.
+        If more then one attribute is specified, first try the first one
+        if that doesn'e succeed take try the next one and so on.
+
+        :param attr: A list of attributes
+        :param default: If none of the attributes have a value return this
+        :return: An attribute value or the default value
+        """
+        for claim in attr:
+            try:
+                return self.tool_config[claim]
+            except KeyError:
+                pass
+        return default
+
+    def get_redirect_uris(self):
+        try:
+            return self.entity.registration_response["redirect_uris"]
+        except KeyError:
+            try:
+                return self.entity.registration_info["redirect_uris"]
+            except KeyError:
+                try:
+                    return self.conf.CLIENT['registration_info'][
+                        "redirect_uris"]
+                except KeyError:
+                    return self.conf.CLIENT['registration_response'][
+                        "redirect_uris"]
