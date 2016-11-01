@@ -62,7 +62,7 @@ class Conversation(object):
         _fh.write(txt)
         _fh.close()
 
-    def get_tool_attribute(self, *attr, default=None):
+    def get_tool_attribute(self, *attr, **kwargs):
         """
         Return the tool configuration attribute value.
         If more then one attribute is specified, first try the first one
@@ -77,7 +77,10 @@ class Conversation(object):
                 return self.tool_config[claim]
             except KeyError:
                 pass
-        return default
+        try:
+            return kwargs['default']
+        except KeyError:
+            return None
 
     def get_redirect_uris(self):
         try:

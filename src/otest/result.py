@@ -22,12 +22,17 @@ logger = logging.getLogger(__name__)
 
 def get_issuer(conv):
     try:
-        return conv.entity.provider_info['issuer']
+        return conv.info['issuer']  # dynamically acquired using WebFinger
     except KeyError:
         try:
-            return conv.tool_config['issuer']
+            # From provider info discovery, dynamic or static
+            return conv.entity.provider_info['issuer']
         except KeyError:
-            return 'unknown'
+            try:
+                # Initial configuration
+                return conv.tool_config['issuer']
+            except KeyError:
+                return 'unknown'
 
 
 def safe_path(eid, *args):
@@ -67,8 +72,11 @@ class Result(object):
 
     def write_info(self, test_id, file_name=None):
         if file_name is None:
-            file_name = safe_path(get_issuer(self.session['conv']),
-                                  self.session['profile'],
+            _iss = get_issuer(self.session['conv'])
+            if _iss.endswith('/'+test_id):
+                _iss = _iss[:-(len(test_id)+1)]
+
+            file_name = safe_path(_iss, self.session['profile'],
                                   self.session['testid'])
 
         if 'conv' not in self.session:
