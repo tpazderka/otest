@@ -58,9 +58,9 @@ def construct_app_args(args, oper, func, default_profiles):
         if args.staticdir:
             _sdir = args.staticdir
         else:
-            _sdir = './static'
+            _sdir = 'static'
     except AttributeError:
-        _sdir = './static'
+        _sdir = 'static'
 
     # If this instance is behind a reverse proxy or on its own
     if CONF.BASE.endswith('/'):

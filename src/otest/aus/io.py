@@ -207,7 +207,7 @@ class WebIO(IO):
         resp = Response(mako_template="opresult_repost.mako",
                         template_lookup=self.lookup,
                         headers=[])
-        argv = {}
+        argv = {'base': self.base_url}
         return resp(self.environ, self.start_response, **argv)
 
     def respond(self, resp):
