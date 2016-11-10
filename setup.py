@@ -49,5 +49,6 @@ setup(
         'cherrypy'
     ],
     zip_safe=False,
-    scripts=['script/testtool.py', 'script/make_keys.py']
+    scripts=['script/testtool.py', 'script/make_keys.py',
+             'script/heart_setup.py']
 )

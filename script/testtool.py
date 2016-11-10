@@ -486,8 +486,8 @@ if __name__ == '__main__':
                         help='Possible OP (=test tool) profiles')
     parser.add_argument(
         '-c', dest="ca_certs",
-        help="CA certs to use to verify HTTPS server certificates, " \
-             "if HTTPS is used and no server CA certs are defined then " \
+        help="CA certs to use to verify HTTPS server certificates, "
+             "if HTTPS is used and no server CA certs are defined then "
              "no cert verification will be done")
     parser.add_argument(
         '-x', dest='xport', help='ONLY for testing')

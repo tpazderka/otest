@@ -71,14 +71,9 @@ def as_arg_setup(args, lookup, config):
     else:  # the old port based
         _path = ''
         _issuer = "{base}:{port}".format(base=config.baseurl, port=_port)
+        if args.tls and _issuer.startswith('http://'):
+            _issuer = _issuer.replace('http://', 'https://')
 
-    # try:
-    #     _issuer = config.issuer % args.port
-    # except TypeError:
-    #     _issuer = config.issuer % int(args.port)
-
-    # Client data base
-    # cdb = shelve.open(config.CLIENT_DB, writeback=True)
     cdb = {}
 
     ac = AuthnBroker()

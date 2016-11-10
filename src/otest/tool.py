@@ -36,7 +36,8 @@ class ConfigurationError(Exception):
 class Tester(object):
     def __init__(self, inut, sh, profile, flows=None, check_factory=None,
                  msg_factory=None, cache=None, make_entity=None, map_prof=None,
-                 trace_cls=None, com_handler=None, response_cls=None, **kwargs):
+                 trace_cls=None, com_handler=None, response_cls=None,
+                 client_factory=None, **kwargs):
         self.inut = inut
         self.sh = sh
         self.conv = None
@@ -44,6 +45,7 @@ class Tester(object):
         self.flows = flows
         self.message_factory = msg_factory
         self.chk_factory = check_factory
+        self.client_factory = client_factory
         self.cache = cache
         self.kwargs = kwargs
         self.make_entity = make_entity
@@ -62,7 +64,8 @@ class Tester(object):
         redirs = get_redirect_uris(kw_args['client_info'])
 
         _flow = self.flows[test_id]
-        _cli, _cli_info = self.make_entity(**kw_args['client_info'])
+        _cli, _cli_info = self.client_factory.make_client(
+            **kw_args['client_info'])
         self.conv = Conversation(_flow, _cli, kw_args["msg_factory"],
                                  trace_cls=Trace, callback_uris=redirs)
         self.conv.entity_config = _cli_info

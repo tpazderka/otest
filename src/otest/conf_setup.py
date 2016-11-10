@@ -138,6 +138,9 @@ def construct_app_args(args, oper, func, default_profiles):
          "jwks_uri": jwks_uri}
     )
 
+    if args.insecure:
+        _client_info['verify_ssl'] = False
+
     # Test profile either as a command line argument or if not that
     # from the configuration file
     if args.profile:
