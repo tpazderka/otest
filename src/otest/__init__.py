@@ -294,8 +294,7 @@ def resp2json(resp):
 from otest import END_TAG
 from otest.operation import Operation
 
+
 class Done(Operation):
     def run(self, *args, **kwargs):
         self.conv.trace.info(END_TAG)
-
-

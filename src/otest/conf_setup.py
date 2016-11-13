@@ -26,7 +26,7 @@ def construct_app_args(args, oper, func, default_profiles):
     sys.path.insert(0, ".")
     CONF = importlib.import_module(args.config)
 
-    setup_logging("%s/rp_%s.log" % (SERVER_LOG_FOLDER, CONF.PORT), logger)
+    #setup_logging("%s/rp_%s.log" % (SERVER_LOG_FOLDER, CONF.PORT), logger)
 
     fdef = {'Flows': {}, 'Order': [], 'Desc': {}}
     cls_factories = {'': oper.factory}
