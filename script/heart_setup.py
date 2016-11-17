@@ -21,7 +21,7 @@ def oidc_op_setup(distroot):
     shutil.copytree(_op_dir, _dir)
 
     _op_dir = os.path.join(distroot['oidc'], 'test_tool', 'test_op', 'oidc_op')
-    for _fname in ['flows.yaml', 'start.sh', 'sslconf.py']:
+    for _fname in ['flows.yaml', 'run.sh', 'sslconf.py']:
         _file = os.path.join(_op_dir, _fname)
         shutil.copy(_file, '.')
 
@@ -42,7 +42,7 @@ def oidc_rp_setup(distroot):
         _src = os.path.join(_op_dir, _dir)
         shutil.copytree(_src, _dir)
 
-    for _fname in ['flows.yaml', 'run.sh', 'conf.py', 'profiles.json',
+    for _fname in ['flows.yaml', 'run.sh', 'example_conf.py', 'profiles.json',
                    'heart_interop_ports.csv']:
         _file = os.path.join(_op_dir, _fname)
         shutil.copy(_file, '.')
@@ -57,7 +57,7 @@ def oauth_as_setup(distroot):
         _src = os.path.join(_op_dir, _dir)
         shutil.copytree(_src, _dir)
 
-    for _fname in ['start.sh', 'conf.py', 'heart_interop_ports.csv']:
+    for _fname in ['start.sh', 'example_conf.py', 'heart_interop_ports.csv']:
         _file = os.path.join(_op_dir, _fname)
         shutil.copy(_file, '.')
 
@@ -71,7 +71,7 @@ def oauth_rp_setup(distroot):
         _src = os.path.join(_op_dir, _dir)
         shutil.copytree(_src, _dir)
 
-    for _fname in ['flows.yaml', 'run.sh', 'conf.py', 'profiles.json']:
+    for _fname in ['flows.yaml', 'run.sh', 'example_conf.py', 'profiles.json']:
         _file = os.path.join(_op_dir, _fname)
         shutil.copy(_file, '.')
 
