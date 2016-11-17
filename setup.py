@@ -27,7 +27,7 @@ setup(
     description="Basic Test framework for testing OAuth2/OIDC Authorization "
                 "server and relaying party implementations",
     author="Roland Hedberg",
-    author_email="roland.hedberg@catalogix.se",
+    author_email="roland@catalogix.se",
     license="Apache 2.0",
     packages=find_packages('src'),
     package_dir={"": "src"},
