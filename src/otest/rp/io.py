@@ -68,7 +68,7 @@ class WebIO(IO):
         argv = {
             "profile": info["profile_info"],
             "trace": info["trace"],
-            "events": info["events"].to_html(),
+            "events": info["events"].timeline(),
             "result": represent_result(_conv.events).replace("\n", "<br>\n"),
             "base": self.base_url,
         }

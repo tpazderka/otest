@@ -120,6 +120,7 @@ def absolute_url(url, startpage):
     (scheme, netloc, path, params, query, fragment) = urlparse(startpage)
     return '{}://{}{}'.format(scheme, netloc, url)
 
+
 # =============================================================================
 
 
@@ -259,7 +260,8 @@ class Application(object):
         path = environ.get('PATH_INFO', '').lstrip('/')
         jlog.info({"remote_addr": environ["REMOTE_ADDR"],
                    "path": path})
-        self.events.store(EV_REQUEST, path)
+
+        #self.events.store(EV_REQUEST, path)
 
         try:
             sh = session['session_info']
@@ -378,6 +380,8 @@ class Application(object):
                 _sh['conv'].events.store('HTTP_AUTHORIZATION',
                                          environ['HTTP_AUTHORIZATION'])
             _p = _path.split('?')
+            _sh['conv'].events.store('http request', '{} /{}'.format(
+                environ['REQUEST_METHOD'], _path))
             if _p[0] in _sh['conv'].entity.endpoints():
                 resp = self.handle(environ, tester, sid, *_p)
                 self.session_conf[sid] = tester.sh

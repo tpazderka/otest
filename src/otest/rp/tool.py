@@ -2,8 +2,9 @@ import logging
 import os
 
 from future.backports.urllib.parse import parse_qs
-from oic.oauth2 import AuthorizationErrorResponse, PyoidcError
+from oic.oauth2 import AuthorizationErrorResponse
 from oic.oauth2 import AuthorizationRequest
+from oic.oauth2 import PyoidcError
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
 
@@ -16,6 +17,7 @@ from otest.check import OK
 from otest.check import State
 from otest.conversation import Conversation
 from otest.events import EV_CONDITION
+from otest.events import EV_OPERATION
 from otest.events import EV_PROTOCOL_REQUEST
 from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
@@ -141,7 +143,7 @@ class WebTester(tool.Tester):
         except AttributeError:
             _name = 'none'
         logger.info("<--<-- {} --- {} -->-->".format(index, _name))
-        self.conv.events.store('operation', _name, sender='run_flow')
+        self.conv.events.store(EV_OPERATION, _name, sender='run_flow')
         try:
             _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                         profile=self.profile, test_id=test_id,
@@ -205,9 +207,9 @@ class WebTester(tool.Tester):
             return self.inut.err_response("session_setup", err)
 
     def handle_request(self, req, path=''):
-        self.conv.events.store(EV_REQUEST, req)
         logging.debug('Raw request: {}'.format(req))
         if req:
+            self.conv.events.store(EV_REQUEST, req)
             func = getattr(self.conv.entity.server,
                            'parse_{}_request'.format(path))
 

@@ -1,9 +1,14 @@
+import copy
 import inspect
 import logging
 import sys
 
 from future.backports.http.cookies import CookieError
 from future.backports.http.cookies import SimpleCookie
+from future.backports.urllib.parse import urlparse
+from oic import oic
+from oic.extension.oidc_fed import ProviderConfigurationResponse
+from oic.oauth2 import ErrorResponse
 from oic.utils.http_util import SeeOther
 
 from otest import operation
@@ -20,10 +25,34 @@ from oic.oauth2.util import set_cookie
 
 from oic.oic import message
 
-
 __author__ = 'roland'
 
 logger = logging.getLogger(__name__)
+
+
+def save_response(events, resp, resp_cls, err_resp_cls):
+    if 'error' in resp.message:
+        _msgtype = err_resp_cls
+    else:
+        _msgtype = resp_cls
+
+    if isinstance(resp, SeeOther):
+        p = urlparse(resp.message)
+        if p.query:
+            _msg = _msgtype().from_urlencoded(p.query)
+        elif p.fragment:
+            _msg = _msgtype().from_urlencoded(p.query)
+        else:
+            _msg = ''
+    else:
+        _msg = copy.copy(resp.message)
+        try:
+            _msg = _msgtype().from_json(_msg)
+        except Exception as err:
+            _msg = _msgtype().from_urlencoded(_msg)
+
+    events.store(EV_PROTOCOL_RESPONSE, _msg, direction=OUTGOING)
+    events.store(EV_RESPONSE, resp.message, direction=OUTGOING)
 
 
 class Operation(operation.Operation):
@@ -98,7 +127,8 @@ class ConfigurationResponse(Response):
         op = self.conv.entity
         resp = op.providerinfo_endpoint()
         if resp.status == '200 OK' or resp.status == '201 Created':
-            self.conv.events.store(EV_RESPONSE, resp.message, direction=OUTGOING)
+            save_response(self.conv.events, resp, ProviderConfigurationResponse,
+                          ErrorResponse)
         return resp
 
 
@@ -118,10 +148,11 @@ class RegistrationResponse(Response):
     def construct_message(self):
         req = self.conv.events.last_item(EV_REQUEST)
         resp = self.conv.entity.registration_endpoint(req)
-        if resp.status == '200 OK':
+        if resp.status == '200 OK' or resp.status == '201 Created':
             logging.debug('Registration response: {}'.format(resp.message))
-            self.conv.events.store(EV_RESPONSE, resp.message,
-                                   direction=OUTGOING)
+            save_response(self.conv.events, resp,
+                          oic.message.RegistrationResponse,
+                          oic.message.ClientRegistrationErrorResponse)
         return resp
 
 
@@ -157,6 +188,10 @@ class AuthorizationResponse(Response):
                 _kwargs['cookie'] = _op.server._cookies()
 
         resp = _op.authorization_endpoint(**_kwargs)
+        if isinstance(resp, SeeOther):
+            save_response(self.conv.events, resp,
+                          oic.message.AuthorizationResponse,
+                          oic.message.AuthorizationErrorResponse)
         return resp
 
 
@@ -187,6 +222,9 @@ class AccessTokenResponse(Response):
         _kwargs.update(self.op_args)
 
         resp = self.conv.entity.token_endpoint(**_kwargs)
+        save_response(self.conv.events, resp,
+                      oic.message.AccessTokenResponse,
+                      oic.message.TokenErrorResponse)
         return resp
 
 
@@ -214,6 +252,9 @@ class UserInfoResponse(Response):
         _kwargs.update(self.op_args)
 
         resp = self.conv.entity.userinfo_endpoint(**_kwargs)
+        save_response(self.conv.events, resp,
+                      oic.message.OpenIDSchema,
+                      oic.message.UserInfoErrorResponse)
         return resp
 
 

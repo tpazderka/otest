@@ -16,7 +16,7 @@ EV_HTTP_ARGS = 'http args'
 EV_HTTP_INFO = 'http info'
 EV_HTTP_RESPONSE = 'http response'
 EV_HTTP_RESPONSE_HEADER = 'http response header'
-EV_OPERATION = 'operation'
+EV_OPERATION = 'phase'
 EV_PROTOCOL_RESPONSE = 'protocol response'
 EV_PROTOCOL_REQUEST = 'protocol request'
 EV_REDIRECT_URL = 'redirect url'
@@ -220,3 +220,7 @@ class Events(object):
 
     def last_event_type(self):
         return self.events[-1].typ
+
+    def timeline(self):
+        start = self.events[0].timestamp
+        return [(ev.timestamp-start, ev.typ, ev.data) for ev in self.events]
