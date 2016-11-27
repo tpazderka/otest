@@ -2,8 +2,9 @@ import logging
 import os
 
 from future.backports.urllib.parse import parse_qs
-from oic.oauth2 import AuthorizationErrorResponse, PyoidcError
+from oic.oauth2 import AuthorizationErrorResponse
 from oic.oauth2 import AuthorizationRequest
+from oic.oauth2 import PyoidcError
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
 
@@ -15,7 +16,8 @@ from otest import tool
 from otest.check import OK
 from otest.check import State
 from otest.conversation import Conversation
-from otest.events import EV_CONDITION, EV_HTTP_REQUEST
+from otest.events import EV_CONDITION
+from otest.events import EV_OPERATION
 from otest.events import EV_PROTOCOL_REQUEST
 from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
@@ -70,7 +72,6 @@ class WebTester(tool.Tester):
         self.conv = Conversation(_flow, _ent,
                                  msg_factory=kw_args["msg_factory"],
                                  trace_cls=self.trace_cls)
-        self.conv.events.store(EV_HTTP_REQUEST, kw_args['op'])
         self.conv.sequence = self.sh["sequence"]
         _ent.conv = self.conv
         _ent.trace = self.conv.trace
@@ -142,7 +143,7 @@ class WebTester(tool.Tester):
         except AttributeError:
             _name = 'none'
         logger.info("<--<-- {} --- {} -->-->".format(index, _name))
-        self.conv.events.store('operation', _name, sender='run_flow')
+        self.conv.events.store(EV_OPERATION, _name, sender='run_flow')
         try:
             _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                         profile=self.profile, test_id=test_id,
@@ -206,9 +207,9 @@ class WebTester(tool.Tester):
             return self.inut.err_response("session_setup", err)
 
     def handle_request(self, req, path=''):
-        self.conv.events.store(EV_REQUEST, req)
         logging.debug('Raw request: {}'.format(req))
         if req:
+            self.conv.events.store(EV_REQUEST, req)
             func = getattr(self.conv.entity.server,
                            'parse_{}_request'.format(path))
 
