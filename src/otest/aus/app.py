@@ -49,6 +49,8 @@ class WebApplication(object):
             return inut.static("static/favicon.ico")
         elif path.startswith("static/"):
             return inut.static(path)
+        elif path.startswith("jwks/"):
+            return inut.static(path)
         elif path.startswith("export/"):
             return inut.static(path)
 

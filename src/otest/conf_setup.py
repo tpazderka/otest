@@ -52,9 +52,9 @@ def construct_app_args(args, conf, operations, func, default_profiles,
         if args.staticdir:
             _sdir = args.staticdir
         else:
-            _sdir = 'static'
+            _sdir = 'jwks'
     except AttributeError:
-        _sdir = 'static'
+        _sdir = 'jwks'
 
     # If this instance is behind a reverse proxy or on its own
     _port = args.port
@@ -151,7 +151,7 @@ def construct_app_args(args, conf, operations, func, default_profiles,
         "client_info": _client_info, "order": fdef['Order'],
         "profiles": profiles, "operation": operations, "cache": {},
         "profile": _profile, "lookup": LOOKUP, "desc": fdef['Desc'],
-        'tool_cnf': inst_conf['tool']
+        'tool_conf': inst_conf['tool']
     }
 
     return _path, app_args

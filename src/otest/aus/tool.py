@@ -79,7 +79,8 @@ class Tester(tool.Tester):
                 _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                             profile=self.profile, test_id=test_id, conf=conf,
                             funcs=funcs, check_factory=self.check_factory,
-                            cache=self.cache)
+                            cache=self.cache,
+                            tool_conf=self.kwargs['tool_conf'])
                 self.conv.operation = _oper
                 _oper.setup(self.profiles.PROFILEMAP)
                 resp = _oper()

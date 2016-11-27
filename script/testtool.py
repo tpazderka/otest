@@ -204,7 +204,7 @@ class Application(object):
         return tester.do_config(sid, **args)
 
     def run_test(self, tester, _path, _sid, environ, start_response):
-        op = '{} {}'.format(environ['REQUEST_METHOD'], _path)
+        _op = '{} {}'.format(environ['REQUEST_METHOD'], _path)
         resp = tester.run(_path, sid=_sid, op=_op, **self.kwargs)
         if resp:
             logger.info(

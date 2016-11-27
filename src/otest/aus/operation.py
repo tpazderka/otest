@@ -62,9 +62,11 @@ class Operation(operation.Operation):
     message_cls = Message
 
     def __init__(self, conv, inut, sh, test_id='', conf=None,
-                 funcs=None, check_factory=None, cache=None, profile=''):
+                 funcs=None, check_factory=None, cache=None, profile='',
+                 tool_conf=None):
         operation.Operation.__init__(self, conv, inut, sh, test_id,
-                                     conf, funcs, check_factory, cache)
+                                     conf, funcs, check_factory, cache,
+                                     tool_conf)
 
         try:
             self.profile = profile.split('.')

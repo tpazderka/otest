@@ -42,7 +42,8 @@ class Operation(object):
     message_cls = None
 
     def __init__(self, conv, inut, sh, test_id='', conf=None, funcs=None,
-                 check_factory=None, cache=None, profile='', **kwargs):
+                 check_factory=None, cache=None, profile='', tool_conf=None,
+                 **kwargs):
         self.conv = conv
         self.inut = inut
         self.sh = sh
@@ -52,6 +53,7 @@ class Operation(object):
         self.check_factory = check_factory
         self.cache = cache
         self.profile = profile
+        self.tool_conf = tool_conf
         self.req_args = {}
         self.op_args = {}
         self.expect_exception = None
