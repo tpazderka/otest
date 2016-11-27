@@ -1,4 +1,7 @@
+import json
 import time
+
+from oic.oauth2 import Message
 
 __author__ = 'roland'
 
@@ -14,6 +17,7 @@ EV_HANDLER_RESPONSE = 'handler response'
 EV_HTML_SRC = 'html_src'
 EV_HTTP_ARGS = 'http args'
 EV_HTTP_INFO = 'http info'
+EV_HTTP_REQUEST = 'http request'
 EV_HTTP_RESPONSE = 'http response'
 EV_HTTP_RESPONSE_HEADER = 'http response header'
 EV_OPERATION = 'operation'
@@ -195,11 +199,16 @@ class Events(object):
                 text.append('<li> {}'.format(ev))
             text.append('</ul>')
         else:
-            text = ['<table border=1>']
+            text = ['<table border=1 width="600">']
             for ev in self.events:
+                if isinstance(ev.data, Message):
+                    _data = json.dumps(ev.data.to_dict(), sort_keys=True,
+                                       indent=4, separators=(',', ': '))
+                else:
+                    _data = ev.data
                 text.append(
                     '<tr><td>{time}</td><td>{typ}</td><td>{data}</td></tr>'.format(
-                        time=ev.timestamp, typ=ev.typ, data=ev.data))
+                        time=ev.timestamp, typ=ev.typ, data=_data))
             text.append('</table>')
 
         return '\n'.join(text)

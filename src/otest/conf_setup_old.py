@@ -14,24 +14,22 @@ from otest.utils import setup_logging
 logger = logging.getLogger(__name__)
 
 
-def construct_app_args(args, conf, operations, func, default_profiles, 
-                       inst_conf):
+def construct_app_args(args, oper, func, default_profiles):
     """
 
     :param args: Command arguments, argparse instance
-    :param conf: Service configuration
     :param oper: Operations module
     :param func: Functions module
     :param default_profiles: The default profiles module
-    :param inst_conf: Test instance configuration
     :return: Application arguments
     """
     sys.path.insert(0, ".")
+    CONF = importlib.import_module(args.config)
 
-    # setup_logging("%s/rp_%s.log" % (SERVER_LOG_FOLDER, _port), logger)
+    #setup_logging("%s/rp_%s.log" % (SERVER_LOG_FOLDER, CONF.PORT), logger)
 
     fdef = {'Flows': {}, 'Order': [], 'Desc': {}}
-    cls_factories = {'': operations.factory}
+    cls_factories = {'': oper.factory}
     func_factory = func.factory
 
     for flow_def in args.flows:
@@ -40,13 +38,21 @@ def construct_app_args(args, conf, operations, func, default_profiles,
         fdef['Desc'].update(spec['Desc'])
         fdef['Order'].extend(spec['Order'])
 
-    try:
-        profiles = importlib.import_module(conf.PROFILES)
-    except AttributeError:
+    if args.profiles:
+        profiles = importlib.import_module(args.profiles)
+    else:
         profiles = default_profiles
 
+    try:
+        if args.operations:
+            operations = importlib.import_module(args.operations)
+        else:
+            operations = oper
+    except AttributeError:
+        operations = oper
+
     # Add own keys for signing/encrypting JWTs
-    jwks, keyjar, kidd = build_keyjar(conf.KEYS)
+    jwks, keyjar, kidd = build_keyjar(CONF.KEYS)
 
     try:
         if args.staticdir:
@@ -57,31 +63,27 @@ def construct_app_args(args, conf, operations, func, default_profiles,
         _sdir = 'static'
 
     # If this instance is behind a reverse proxy or on its own
-    _port = args.port
-    if conf.BASE.endswith('/'):
-        conf.BASE = conf.BASE[:-1]
-    
+    if CONF.BASE.endswith('/'):
+        CONF.BASE = CONF.BASE[:-1]
     if args.path2port:
         ppmap = read_path2port_map(args.path2port)
-        try:
-            _path = ppmap[str(_port)]
-        except KeyError:
-            print('Port not in path2port map file {}'.format(args.path2port))
-            sys.exit(-1)
-
+        _path = ppmap[str(CONF.PORT)]
         if args.xport:
-            _base = '{}:{}/{}/'.format(conf.BASE, str(_port), _path)
+            _port = CONF.PORT
+            _base = '{}:{}/{}/'.format(CONF.BASE, str(CONF.PORT), _path)
         else:
-            _base = '{}/{}/'.format(conf.BASE, _path)
+            _base = '{}/{}/'.format(CONF.BASE, _path)
+            if args.tls:
+                _port = 443
+            else:
+                _port = 80
     else:
+        _port = CONF.PORT
         if _port not in [443, 80]:
-            _base = '{}:{}'.format(conf.BASE, _port)
+            _base = '{}:{}'.format(CONF.BASE, _port)
         else:
-            _base = conf.BASE
+            _base = CONF.BASE
         _path = ''
-
-    if not _base.endswith('/'):
-        _base += '/'
 
     # -------- JWKS ---------------
 
@@ -89,11 +91,11 @@ def construct_app_args(args, conf, operations, func, default_profiles,
         jwks_uri = "{}{}/jwks_{}.json".format(_base, _sdir, _port)
         f = open('{}/jwks_{}.json'.format(_sdir, _port), "w")
     elif _port not in [443, 80]:
-        jwks_uri = "{}:{}/{}/jwks_{}.json".format(conf.BASE, _port, _sdir,
+        jwks_uri = "{}:{}/{}/jwks_{}.json".format(CONF.BASE, _port, _sdir,
                                                   _port)
         f = open('{}/jwks_{}.json'.format(_sdir, _port), "w")
     else:
-        jwks_uri = "{}/{}/jwks.json".format(conf.BASE, _sdir)
+        jwks_uri = "{}/{}/jwks.json".format(CONF.BASE, _sdir)
         f = open('{}/jwks.json'.format(_sdir), "w")
     f.write(json.dumps(jwks))
     f.close()
@@ -114,9 +116,9 @@ def construct_app_args(args, conf, operations, func, default_profiles,
                             input_encoding='utf-8',
                             output_encoding='utf-8')
 
-    _client_info = inst_conf['client']
+    _client_info = CONF.CLIENT
 
-    # Now when the basic URL for the RP is constructed update the
+    # Now when the basci URL for the RP is constructed update the
     # redirect_uris and the post_logout_redirect_uris
     try:
         ri = _client_info['registration_info']
@@ -130,6 +132,7 @@ def construct_app_args(args, conf, operations, func, default_profiles,
         except KeyError:
             pass
 
+    _base += '/'
     _client_info.update(
         {"base_url": _base, 'client_id': _base, "kid": kidd, "keyjar": keyjar,
          "jwks_uri": jwks_uri}
@@ -143,15 +146,14 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     if args.profile:
         _profile = args.profile
     else:
-        _profile = inst_conf['tool']['profile']
+        _profile = CONF.TOOL['profile']
 
     # Application arguments
     app_args = {
-        "flows": fdef['Flows'], "conf": conf,
+        "flows": fdef['Flows'], "conf": CONF,
         "client_info": _client_info, "order": fdef['Order'],
         "profiles": profiles, "operation": operations, "cache": {},
         "profile": _profile, "lookup": LOOKUP, "desc": fdef['Desc'],
-        'tool_cnf': inst_conf['tool']
     }
 
     return _path, app_args

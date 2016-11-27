@@ -15,7 +15,7 @@ from otest import tool
 from otest.check import OK
 from otest.check import State
 from otest.conversation import Conversation
-from otest.events import EV_CONDITION
+from otest.events import EV_CONDITION, EV_HTTP_REQUEST
 from otest.events import EV_PROTOCOL_REQUEST
 from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
@@ -70,6 +70,7 @@ class WebTester(tool.Tester):
         self.conv = Conversation(_flow, _ent,
                                  msg_factory=kw_args["msg_factory"],
                                  trace_cls=self.trace_cls)
+        self.conv.events.store(EV_HTTP_REQUEST, kw_args['op'])
         self.conv.sequence = self.sh["sequence"]
         _ent.conv = self.conv
         _ent.trace = self.conv.trace

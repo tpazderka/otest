@@ -26,7 +26,7 @@ from oic.utils.http_util import SeeOther
 from oic.utils import http_util
 
 from otest import Trace
-from otest.events import Events
+from otest.events import Events, EV_HTTP_REQUEST
 from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
 from otest.parse_cnf import parse_yaml_conf
@@ -109,8 +109,8 @@ def start_page(environ, start_response, target):
     return resp(environ, start_response)
 
 
-def make_entity(provider_cls, **as_args):
-    return provider_cls(**as_args)
+def make_entity(provider_cls, **kw_args):
+    return provider_cls(**kw_args)
 
 
 def absolute_url(url, startpage):
@@ -204,7 +204,8 @@ class Application(object):
         return tester.do_config(sid, **args)
 
     def run_test(self, tester, _path, _sid, environ, start_response):
-        resp = tester.run(_path, sid=_sid, **self.kwargs)
+        op = '{} {}'.format(environ['REQUEST_METHOD'], _path)
+        resp = tester.run(_path, sid=_sid, op=_op, **self.kwargs)
         if resp:
             logger.info(
                 'Response class: {}'.format(resp.__class__.__name__))
@@ -259,7 +260,7 @@ class Application(object):
         path = environ.get('PATH_INFO', '').lstrip('/')
         jlog.info({"remote_addr": environ["REMOTE_ADDR"],
                    "path": path})
-        self.events.store(EV_REQUEST, path)
+        #self.events.store(EV_REQUEST, path)
 
         try:
             sh = session['session_info']
@@ -283,7 +284,8 @@ class Application(object):
             return static_mime("static/robots.txt", environ, start_response)
         elif _path.startswith("static/"):
             return static_mime(_path, environ, start_response)
-        elif _path == "list":
+
+        if _path == "list":
             try:
                 qs = parse_qs(get_or_post(environ))
             except Exception as err:
@@ -468,6 +470,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '-k', dest='insecure', action='store_true',
         help='whether or not TLS certificate verification should be performed')
+    parser.add_argument(
+        '-H', dest='hostname',
+        help='If running behind a proxy this is the external name of the host')
     parser.add_argument('-s', dest='tls', action='store_true',
                         help='Whether the server should handle SSL/TLS')
     parser.add_argument('-p', dest="profile", action='append',
