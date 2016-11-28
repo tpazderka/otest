@@ -39,7 +39,6 @@ class WebApplication(object):
         inut = self.webio(session=sh, **self.webenv)
         inut.environ = environ
         inut.start_response = start_response
-
         tester = self.webtester(inut, sh, **self.webenv)
         tester.check_factory = self.check.factory
 

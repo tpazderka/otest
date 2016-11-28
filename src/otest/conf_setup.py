@@ -147,7 +147,7 @@ def construct_app_args(args, conf, operations, func, default_profiles,
 
     # Application arguments
     app_args = {
-        "flows": fdef['Flows'], "conf": conf,
+        "flows": fdef['Flows'], "conf": conf, "base_url": _base,
         "client_info": _client_info, "order": fdef['Order'],
         "profiles": profiles, "operation": operations, "cache": {},
         "profile": _profile, "lookup": LOOKUP, "desc": fdef['Desc'],
