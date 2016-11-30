@@ -68,9 +68,13 @@ class WebApplication(object):
         elif _path.startswith("log"):
             if _path == "log" or _path == "log/":
                 try:
-                    _iss = inut.conf.CLIENT["provider_info"]["issuer"]
+                    _iss = self.webenv['client_info']["provider_info"]["issuer"]
                 except KeyError:
-                    _iss = inut.conf.ISSUER
+                    _iss = self.webenv['tool_conf']['issuer']
+                if _iss.startswith('https://'):
+                    _iss = 's_' + _iss[8:]
+                elif _iss.startswith('http://'):
+                    _iss = _iss[7:]
 
                 parts = [quote_plus(_iss)]
             else:

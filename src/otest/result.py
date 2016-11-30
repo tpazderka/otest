@@ -36,6 +36,11 @@ def get_issuer(conv):
 
 
 def safe_path(eid, *args):
+    if eid.startswith('https://'):
+        eid = 's_'+eid[8:]
+    elif eid.startswith('http://'):
+        eid = eid[7:]
+
     s = quote(eid)
     s = s.replace('/', '%2F')
 

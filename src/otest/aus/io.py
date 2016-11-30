@@ -1,7 +1,7 @@
 import logging
 import os
 
-#from urllib.parse import unquote
+# from urllib.parse import unquote
 from future.backports.urllib.parse import unquote
 
 from oic.utils.http_util import NotFound
@@ -47,14 +47,6 @@ class WebIO(IO):
             logger.error(err)
             raise
 
-        # try:
-        #     _tid = self.session["testid"]
-        # except KeyError:
-        #     _tid = None
-        #
-        # res = Result(self.session, self.profile_handler)
-        # res.print_info(_tid)
-
         argv = {
             "flows": self.session["tests"],
             "profile": self.session["profile"],
@@ -62,7 +54,6 @@ class WebIO(IO):
             "base": self.base_url,
             "headlines": self.desc,
             "testresults": TEST_RESULTS,
-            'base': self.base_url
         }
 
         return resp(self.environ, self.start_response, **argv)
@@ -100,6 +91,7 @@ class WebIO(IO):
 
         try:
             text = open(path, 'rb').read()
+            logger.debug('Read {} bytes'.format(len(text)))
             if path.endswith(".ico"):
                 self.start_response('200 OK', [('Content-Type',
                                                 "image/x-icon")])
@@ -124,6 +116,7 @@ class WebIO(IO):
 
     def _display(self, root, issuer, profile):
         item = []
+        logger.debug('curdir:{}'.format(os.curdir))
         if profile:
             path = os.path.join(root, issuer, profile).replace(":", "%3A")
             argv = {"issuer": unquote(issuer), "profile": profile}
@@ -165,12 +158,22 @@ class WebIO(IO):
 
         item.sort()
         argv["logs"] = item
+        argv["base"] = self.base_url
         return resp(self.environ, self.start_response, **argv)
 
     def display_log(self, root, issuer="", profile="", testid=""):
+        """
+
+        :param root:
+        :param issuer:
+        :param profile:
+        :param testid:
+        :return:
+        """
         logger.info(
-            "display_log root: '%s' issuer: '%s', profile: '%s' testid: '%s'"
-            % (root, issuer, profile, testid))
+            "display_log root: '{root}' issuer: '{iss}', profile: '{prof}' "
+            "testid: '{tid}'".format(
+                root=root, iss=issuer, prof=profile, tid=testid))
         if testid:
             path = os.path.join(root, issuer, profile, testid).replace(":",
                                                                        "%3A")
