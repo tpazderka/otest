@@ -10,33 +10,33 @@ INCOMING = 1
 OUTGOING = 2
 
 # standard event labels
-EV_ASSERTION = 'assertion'
-EV_CONDITION = 'condition'
-EV_EXCEPTION = 'exception'
-EV_END = 'end'
-EV_FAULT = 'fault'
-EV_FUNCTION = 'function'
-EV_HANDLER_RESPONSE = 'handler response'
-EV_HTML_SRC = 'html_src'
-EV_HTTP_ARGS = 'http args'
-EV_HTTP_INFO = 'http info'
-EV_HTTP_REQUEST = 'http request'
-EV_HTTP_RESPONSE = 'http response'
-EV_HTTP_RESPONSE_HEADER = 'http response header'
-EV_NOOP = 'no operation'
-EV_OPERATION = 'phase'
-EV_OP_ARGS = 'operation args'
-EV_PROTOCOL_RESPONSE = 'protocol response'
-EV_PROTOCOL_REQUEST = 'protocol request'
-EV_REDIRECT_URL = 'redirect url'
-EV_REPLY = 'reply'
-EV_REQUEST = 'request'
-EV_REQUEST_ARGS = 'request args'
-EV_RESPONSE = 'response'
-EV_RESPONSE_ARGS = 'response args'
-EV_RUN = 'run'
-EV_SEND = 'send'
-EV_URL = 'url'
+EV_ASSERTION = 'Assertion'
+EV_CONDITION = 'Condition'
+EV_EXCEPTION = 'Exception'
+EV_END = 'End'
+EV_FAULT = 'Fault'
+EV_FUNCTION = 'Function'
+EV_HANDLER_RESPONSE = 'Handler response'
+EV_HTML_SRC = 'HTML src'
+EV_HTTP_ARGS = 'HTTP args'
+EV_HTTP_INFO = 'HTTP info'
+EV_HTTP_REQUEST = 'HTTP request'
+EV_HTTP_RESPONSE = 'HTTP response'
+EV_HTTP_RESPONSE_HEADER = 'HTTP response header'
+EV_NOOP = 'Not expected to do'
+EV_OPERATION = 'Phase'
+EV_OP_ARGS = 'Operation args'
+EV_PROTOCOL_RESPONSE = 'Protocol response'
+EV_PROTOCOL_REQUEST = 'Protocol request'
+EV_REDIRECT_URL = 'Redirect url'
+EV_REPLY = 'Reply'
+EV_REQUEST = 'Request'
+EV_REQUEST_ARGS = 'Request args'
+EV_RESPONSE = 'Response'
+EV_RESPONSE_ARGS = 'Response args'
+EV_RUN = 'Run'
+EV_SEND = 'Send'
+EV_URL = 'URL'
 
 
 class NoSuchEvent(Exception):
@@ -216,8 +216,8 @@ class Events(object):
                 else:
                     _data = ev.data
                 text.append(
-                    '<tr><td>{time}</td><td>{typ}</td><td>{'
-                    'data}</td></tr>'.format(
+                    '<tr><td>{time}</td><td>{typ}</td>'
+                    '<td>{data}}</td></tr>'.format(
                         time=ev.timestamp, typ=ev.typ, data=_data))
             text.append('</table>')
 
@@ -243,3 +243,66 @@ class Events(object):
     def timeline(self):
         start = self.events[0].timestamp
         return [(ev.timestamp - start, ev.typ, ev.data) for ev in self.events]
+
+
+def funtion_to_str(event):
+    _dat = event.data
+    res = [_dat['name']]
+    if 'args' in _dat and _dat['args']:
+        res.append('args:{}'.format(_dat['args']))
+    if 'kwargs' in _dat and _dat['kwargs']:
+        res.append('kwargs:{}'.format(_dat['kwargs']))
+    return res
+
+
+def http_response_to_str(event):
+    _dat = event.data
+    res = [event.typ]
+    if _dat.status_code:
+        res.append('status_code:{}'.format(_dat.status_code))
+    if _dat.text:
+        res.append('message:{}'.format(_dat.text))
+    if _dat.url:
+        res.append('url:{}'.format(_dat.url))
+    return res
+
+
+def exception_to_str(event):
+    res = [event.typ]
+    try:
+        res.append('{} {}'.format(event.kwargs['note'], event.data))
+    except KeyError:
+        res.append('{}'.format(event.data))
+    return res
+
+
+def message_to_str(event):
+    return [event.data.__class__.__name__,
+            json.dumps(event.data.to_dict(), sort_keys=True, indent=4,
+                       separators=(',', ': '))]
+
+
+TO_STR = {
+    EV_FUNCTION: funtion_to_str,
+    EV_HTTP_RESPONSE: http_response_to_str,
+    EV_EXCEPTION: exception_to_str,
+    EV_PROTOCOL_REQUEST: message_to_str,
+    EV_PROTOCOL_RESPONSE: message_to_str
+}
+
+
+def layout(start, event):
+    elem = ['{}'.format(round(event.timestamp - start, 3))]
+    if event.direction:
+        if event.direction == OUTGOING:
+            elem.append('-->')
+        else:
+            elem.append('<--')
+
+    try:
+        elem.extend(TO_STR[event.typ](event))
+    except KeyError:
+        elem.append(event.typ)
+        elem.append(str(event.data))
+
+    return ' '.join(elem)

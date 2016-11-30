@@ -65,7 +65,7 @@ class Verify(object):
             chk = test(**kwargs)
 
         if chk.__class__.__name__ not in self.ignore_check:
-            self.conv.event.store(EV_ASSERTION, chk.__class__.__name__)
+            self.conv.events.store(EV_ASSERTION, chk.__class__.__name__)
             try:
                 stat = chk(self.conv)
             except Exception as err:

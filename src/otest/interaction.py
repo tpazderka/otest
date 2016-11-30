@@ -348,7 +348,7 @@ class Action(object):
 
         if _conv.events:
             _conv.events.store(EV_FUNCTION,
-                               {'name': function.__name__, 'args': _args})
+                               {'name': function.__name__, 'kwargs': _args})
 
         result = function(response, **_args)
         self.post_op(result, _conv, _args)

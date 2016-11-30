@@ -2,15 +2,14 @@ import json
 import os
 import tarfile
 
-from oic.oauth2 import Message
-
 from otest.check import STATUSCODE
 from otest.check import ERROR
 from otest.check import CRITICAL
 from otest.check import WARNING
 from otest.check import INCOMPLETE
 from otest.check import OK
-from otest.events import EV_CONDITION, OUTGOING
+from otest.events import EV_CONDITION
+from otest.events import layout
 
 __author__ = 'roland'
 
@@ -111,35 +110,6 @@ def store_test_state(session, events):
 
 
 # -----------------------------------------------------------------------------
-LAYOUT = "{}"
-
-
-# return [(ev.timestamp - start, ev.typ, ev.data) for ev in self.events]
-
-
-def layout(start, event):
-    elem = ['{}'.format(round(event.timestamp - start, 3))]
-    if event.direction:
-        if event.direction == OUTGOING:
-            elem.append('-->')
-        else:
-            elem.append('<--')
-
-    elem.append(event.typ)
-
-    if isinstance(event.data, Message):
-        elem.append(json.dumps(event.data.to_dict(), sort_keys=True, indent=4,
-                               separators=(',', ': ')))
-    elif isinstance(event.data, Exception):
-        try:
-            elem.append('{} {}'.format(event.kwargs['note'], event.data))
-        except KeyError:
-            elem.append('{}'.format(event.data))
-    else:
-        elem.append(event.data)
-
-    return ' '.join(elem)
-
 
 def trace_output(events):
     """

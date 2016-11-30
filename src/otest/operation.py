@@ -84,7 +84,7 @@ class Operation(object):
         if self.skip:
             return
         else:
-            cls_name = self.__class__.__name__
+            cls_name =  self.__class__.__name__
             if self.tests["pre"] or self.tests["post"]:
                 _ver = Verify(self.check_factory, self.conv, cls_name=cls_name)
             else:
@@ -92,9 +92,6 @@ class Operation(object):
 
             if self.tests["pre"]:
                 _ver.test_sequence(self.tests["pre"])
-
-            self.conv.events.store(
-                EV_FUNCTION, {'name': cls_name, 'args': args, 'kwargs': kwargs})
 
             res = self.run(*args, **kwargs)
 
@@ -108,7 +105,7 @@ class Operation(object):
         for op, arg in list(self.funcs.items()):
             op(self, arg)
 
-        self.conv.events.store(EV_OP_ARGS, self.op_args)
+        #self.conv.events.store(EV_OP_ARGS, self.op_args)
 
     def apply_profile(self, profile_map):
         try:
@@ -138,7 +135,7 @@ class Operation(object):
         res = None
         try:
             self.conv.events.store(EV_FUNCTION,
-                                 {'name': func.__name__, 'kwargs': kwargs})
+                                   {'name': func.__name__, 'kwargs': kwargs})
             res = func(**kwargs)
         except Exception as err:
             self.conv.events.store(EV_EXCEPTION, err)
