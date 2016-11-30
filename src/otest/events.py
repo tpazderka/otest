@@ -258,12 +258,12 @@ def funtion_to_str(event):
 def http_response_to_str(event):
     _dat = event.data
     res = [event.typ]
+    if _dat.url:
+        res.append('url:{}'.format(_dat.url))
     if _dat.status_code:
         res.append('status_code:{}'.format(_dat.status_code))
     if _dat.text:
         res.append('message:{}'.format(_dat.text))
-    if _dat.url:
-        res.append('url:{}'.format(_dat.url))
     return res
 
 

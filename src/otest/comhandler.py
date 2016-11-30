@@ -1,6 +1,7 @@
 import logging
 from otest import FatalError
 from otest.contenthandler import HandlerResponse
+from otest.events import EV_HTTP_RESPONSE
 
 __author__ = 'roland'
 
@@ -49,7 +50,7 @@ class ComHandler(object):
                 except Exception as err:
                     raise FatalError("%s" % err)
 
-                self.conv.events('http response', http_response)
+                self.conv.events(EV_HTTP_RESPONSE, http_response)
 
                 if http_response.status_code >= 400:
                     return http_response
