@@ -97,11 +97,9 @@ class Result(object):
                       "Timestamp: {}".format(in_a_while())]
 
         output.extend(["", sline, ""])
-        output.extend(trace_output(_conv.trace))
+        output.extend(trace_output(_conv.events))
         output.extend(["", sline, ""])
         output.extend(condition(_conv.events))
-        output.extend(["", sline, ""])
-        output.extend(['Events', '{}'.format(_conv.events)])
         output.extend(["", sline, ""])
         # and lastly the result
         output.append(

@@ -10,6 +10,7 @@ INCOMING = 1
 OUTGOING = 2
 
 # standard event labels
+EV_ASSERTION = 'assertion'
 EV_CONDITION = 'condition'
 EV_EXCEPTION = 'exception'
 EV_END = 'end'
@@ -22,6 +23,7 @@ EV_HTTP_INFO = 'http info'
 EV_HTTP_REQUEST = 'http request'
 EV_HTTP_RESPONSE = 'http response'
 EV_HTTP_RESPONSE_HEADER = 'http response header'
+EV_NOOP = 'no operation'
 EV_OPERATION = 'phase'
 EV_OP_ARGS = 'operation args'
 EV_PROTOCOL_RESPONSE = 'protocol response'
@@ -32,6 +34,7 @@ EV_REQUEST = 'request'
 EV_REQUEST_ARGS = 'request args'
 EV_RESPONSE = 'response'
 EV_RESPONSE_ARGS = 'response args'
+EV_RUN = 'run'
 EV_SEND = 'send'
 EV_URL = 'url'
 
@@ -65,7 +68,7 @@ class HTTPResponse(object):
 
 class Event(object):
     def __init__(self, timestamp=0, typ='', data=None, ref='', sub='',
-                 sender='', direction=0):
+                 sender='', direction=0, **kwargs):
         self.timestamp = timestamp or time.time()
         self.typ = typ
         self.data = data
@@ -73,6 +76,7 @@ class Event(object):
         self.sub = sub
         self.sender = sender
         self.direction = direction
+        self.kwargs = kwargs
 
     def __str__(self):
         return '{}:{}:{}'.format(self.timestamp, self.typ, self.data)
@@ -94,13 +98,15 @@ class Events(object):
     def __init__(self):
         self.events = []
 
-    def store(self, typ, data, ref='', sub='', sender='', direction=0):
+    def store(self, typ, data, ref='', sub='', sender='', direction=0,
+              **kwargs):
         index = time.time()
 
         if typ == EV_HTTP_RESPONSE:  # only store part of the instance
             data = HTTPResponse(data)
 
-        self.events.append(Event(index, typ, data, ref, sub, sender, direction))
+        self.events.append(
+            Event(index, typ, data, ref, sub, sender, direction, **kwargs))
         return index
 
     def by_index(self, index):
@@ -130,7 +136,7 @@ class Events(object):
         for m in self.get(typ):
             if m.data.__class__ == msg_cls:
                 res.append(m.data)
-        #return [m.data for m in self.get(typ) if isinstance(m.data, msg_cls)]
+        # return [m.data for m in self.get(typ) if isinstance(m.data, msg_cls)]
         return res
 
     def last(self, typ):
@@ -210,7 +216,8 @@ class Events(object):
                 else:
                     _data = ev.data
                 text.append(
-                    '<tr><td>{time}</td><td>{typ}</td><td>{data}</td></tr>'.format(
+                    '<tr><td>{time}</td><td>{typ}</td><td>{'
+                    'data}</td></tr>'.format(
                         time=ev.timestamp, typ=ev.typ, data=_data))
             text.append('</table>')
 
@@ -235,4 +242,4 @@ class Events(object):
 
     def timeline(self):
         start = self.events[0].timestamp
-        return [(ev.timestamp-start, ev.typ, ev.data) for ev in self.events]
+        return [(ev.timestamp - start, ev.typ, ev.data) for ev in self.events]

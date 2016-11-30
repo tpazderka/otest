@@ -7,7 +7,9 @@ from otest import ConditionError
 from otest import exception_trace
 from otest.check import CRITICAL
 from otest.check import INTERACTION
+from otest.events import EV_ASSERTION
 from otest.events import EV_CONDITION
+from otest.events import EV_FAULT
 
 __author__ = 'roland'
 
@@ -26,7 +28,6 @@ class MissingTest(Exception):
 class Verify(object):
     def __init__(self, check_factory, conv, cls_name=''):
         self.check_factory = check_factory
-        self.trace = conv.trace
         self.ignore_check = []
         self.exception = None
         self.conv = conv
@@ -41,8 +42,9 @@ class Verify(object):
                     pass
                 else:
                     if _val:
-                        self.trace.error("{label}: {val}".format(val=_val,
-                                                                 label=label))
+                        self.conv.events(
+                            EV_FAULT,
+                            "{label}: {val}".format(val=_val, label=label))
 
             try:
                 if not stat.mti:
@@ -63,7 +65,7 @@ class Verify(object):
             chk = test(**kwargs)
 
         if chk.__class__.__name__ not in self.ignore_check:
-            self.conv.trace.info("Assert {}".format(chk.__class__.__name__))
+            self.conv.event.store(EV_ASSERTION, chk.__class__.__name__)
             try:
                 stat = chk(self.conv)
             except Exception as err:

@@ -15,7 +15,7 @@ from otest import tool
 from otest.check import ERROR
 from otest.check import OK
 from otest.check import State
-from otest.events import EV_CONDITION
+from otest.events import EV_CONDITION, EV_OPERATION
 from otest.events import EV_REDIRECT_URL
 from otest.io import eval_state
 from otest.result import Result
@@ -73,8 +73,9 @@ class Tester(tool.Tester):
                 funcs = {}
 
             _name = cls.__name__
-            logger.info("<--<-- {} --- {} -->-->".format(index, _name))
-            self.conv.trace.info("<--<-- {} --- {} -->-->".format(index, _name))
+            _line = "<--<-- {} --- {} -->-->".format(index, _name)
+            logger.info(_line)
+            self.conv.events.store(EV_OPERATION, _line)
             try:
                 _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                             profile=self.profile, test_id=test_id, conf=conf,
@@ -92,7 +93,6 @@ class Tester(tool.Tester):
                     State(test_id=test_id, status=ERROR, message=err,
                           context=cls.__name__))
                 exception_trace(cls.__name__, err, logger)
-                self.conv.trace.error('Operation failed: {}'.format(err))
                 self.sh["index"] = index
                 res.store_test_info()
                 res.write_info(test_id)

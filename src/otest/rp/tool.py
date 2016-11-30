@@ -74,7 +74,6 @@ class WebTester(tool.Tester):
                                  trace_cls=self.trace_cls)
         self.conv.sequence = self.sh["sequence"]
         _ent.conv = self.conv
-        _ent.trace = self.conv.trace
         self.sh["conv"] = self.conv
         return True
 

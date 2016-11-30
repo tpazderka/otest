@@ -14,7 +14,11 @@ from oic.utils.http_util import SeeOther
 from otest import operation
 from otest import OperationError
 
-from otest.events import EV_HTTP_RESPONSE, EV_RESPONSE, OUTGOING, NoSuchEvent
+from otest.events import EV_HTTP_RESPONSE
+from otest.events import EV_RESPONSE
+from otest.events import OUTGOING
+from otest.events import NoSuchEvent
+from otest.events import EV_RUN
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_REDIRECT_URL
 from otest.events import EV_REQUEST
@@ -65,7 +69,7 @@ class Operation(operation.Operation):
                 _ver = Verify(self.check_factory, self.conv, cls_name=cls_name)
                 _ver.test_sequence(self.tests["pre"])
 
-            self.conv.trace.info("Running '{}'".format(cls_name))
+            self.conv.events.store(EV_RUN, cls_name)
             res = self.run(*args, **kwargs)
 
             if res:
@@ -78,14 +82,12 @@ class Init(Operation):
 
     def run(self, **kwargs):
         self.conv.events.store('start_page', self.start_page)
-        self.conv.trace.info("Doing GET on {}".format(self.start_page))
         if self.internal:
             res = self.conv.entity.server.http_request(self.start_page)
         else:
             res = SeeOther(self.start_page)
             return res
         self.conv.events.store(EV_HTTP_RESPONSE, res)
-        self.conv.trace.info("Got a {} response".format(res.status_code))
         if res.status_code in [302, 303]:
             loc = res.headers['location']
             try:
@@ -95,14 +97,12 @@ class Init(Operation):
             logger.info('Redirect to {}'.format(loc))
             logger.debug('msg: {}'.format(res.text))
             self.conv.events.store(EV_REDIRECT_URL, loc, sub='init')
-            self.conv.trace.info("Received HTML: {}".format(res.text))
         elif res.status_code >= 400:
             logger.info('Error {}'.format(res.text))
             raise OperationError('Error response on HTTP request')
         return res
 
     def handle_response(self, resp, *args):
-        self.conv.trace.reply(resp)
         self.conv.events.store(EV_PROTOCOL_RESPONSE,
                                message.AuthorizationResponse(**resp))
 

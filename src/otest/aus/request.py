@@ -22,7 +22,7 @@ from otest import Break
 from otest import operation
 from otest import Unknown
 from otest.log import Log
-from otest.events import EV_HTTP_RESPONSE
+from otest.events import EV_HTTP_RESPONSE, EV_FAULT
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_RESPONSE
 from otest.events import EV_REQUEST
@@ -63,7 +63,7 @@ class Request(Operation):
             except KeyError:
                 pass
         else:
-            self.conv.trace.error("Expected error, didn't get it")
+            self.conv.events.store(EV_FAULT, "Expected error, didn't get it")
             raise Break("Did not receive expected error")
 
         return response
@@ -114,25 +114,11 @@ class SyncRequest(Request):
             self.response = Message
 
     def do_request(self, client, url, body, ht_args):
-        _trace = self.conv.trace
         response = client.http_request(url, method=self.method, data=body,
                                        **ht_args)
 
         self.conv.events.store(EV_HTTP_RESPONSE, response,
                                sender=self.__class__.__name__)
-        _trace.reply("RESPONSE: %s" % response)
-        _trace.reply("CONTENT: %s" % response.text)
-        try:
-            _trace.reply("REASON: %s" % response.reason)
-        except AttributeError:
-            pass
-        if response.status_code in [301, 302]:
-            _trace.reply("LOCATION: %s" % response.headers["location"])
-        try:
-            _trace.reply("COOKIES: %s" % requests.utils.dict_from_cookiejar(
-                response.cookies))
-        except AttributeError:
-            _trace.reply("COOKIES: %s" % response.cookies)
 
         return response
 
@@ -218,17 +204,10 @@ class SyncRequest(Request):
             http_args.update(ht_args)
 
         self.conv.events.store(EV_REQUEST, csi, sender=self.__class__.__name__)
-        self.conv.trace.info(
-            20 * "=" + " " + self.__class__.__name__ + " " + 20 * "=")
-        self.conv.trace.request("URL: {}".format(url))
-        if body:
-            self.conv.trace.request("BODY: {}".format(body))
         http_response = self.do_request(_client, url, body, http_args)
 
         response = self.catch_exception(self.handle_response, r=http_response,
                                         csi=csi)
-        self.conv.trace.response(response)
-        # self.sequence.append((response, http_response.text))
 
         if self.expect_error:
             response = self.expected_error_response(response)
@@ -259,7 +238,6 @@ class AsyncRequest(Request):
         except AttributeError:
             pass
         self.conv.req = self
-        self.trace = conv.trace
         self.tests = copy.deepcopy(self._tests)
         self.csi = None
         self.request = self.conv.msg_factory(self.request_cls)
@@ -271,7 +249,6 @@ class AsyncRequest(Request):
 
     def run(self):
         _client = self.conv.entity
-        _trace = self.conv.trace
 
         url, body, ht_args, csi = _client.request_info(
             self.request, method=self.method, request_args=self.req_args,
@@ -279,8 +256,6 @@ class AsyncRequest(Request):
 
         self.csi = csi
 
-        _trace.info("redirect.url: %s" % url)
-        _trace.info("redirect.header: %s" % ht_args)
         self.conv.events.store(EV_REDIRECT_URL, url,
                                sender=self.__class__.__name__)
         return Redirect(str(url))
@@ -337,7 +312,6 @@ class AsyncRequest(Request):
 
         logger.info("Response: %s" % info)
 
-        _conv.trace.reply(info)
         ev_index = _conv.events.store(EV_RESPONSE, info,
                                       sender=self.__class__.__name__)
 
@@ -356,7 +330,6 @@ class AsyncRequest(Request):
 
         logger.info("Parsed response: %s" % response.to_dict())
 
-        _conv.trace.response(response)
         _conv.events.store(EV_PROTOCOL_RESPONSE, response, ref=ev_index,
                            sender=self.__class__.__name__)
 

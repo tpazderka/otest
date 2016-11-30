@@ -20,7 +20,6 @@ class Response(Operation):
         self.op_args = {}
         self.csi = None
         self.entity = self.conv.entity
-        self.trace = self.conv.trace
         self.relay_state = ''
         self.request_id = ''
         self.response_args = {}
@@ -41,7 +40,7 @@ class Response(Operation):
                 _ver = Verify(self.check_factory, self.conv, cls_name=cls_name)
                 _ver.test_sequence(self.tests["pre"])
 
-            self.conv.trace.info("Running '{}'".format(cls_name))
+            self.conv.events.store(EV_RUN,cls_name)
 
             res = self.run(*args, **kwargs)
 

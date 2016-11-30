@@ -147,13 +147,12 @@ class Operation(object):
             elif not err.__class__.__name__ == self.expect_exception:
                 raise
             else:
-                self.conv.events.store(EV_EXCEPTION, err, )
+                self.conv.events.store(EV_EXCEPTION, err, note='expected')
         else:
             if self.expect_exception:
                 raise Exception(
                     "Expected exception '{}'.".format(self.expect_exception))
             if res:
-                self.conv.trace.reply(res)
                 if isinstance(res, self.message_cls):
                     self.conv.events.store(EV_PROTOCOL_RESPONSE, res)
                 else:

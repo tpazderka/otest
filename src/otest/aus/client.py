@@ -15,7 +15,6 @@ class OicClient(oic.Client):
     def store_response(self, clinst, text):
         self.conv.events.store(EV_RESPONSE, text)
         self.conv.events.store(EV_PROTOCOL_RESPONSE, clinst)
-        self.conv.trace.response(clinst)
 
 
 class ExtClient(client.Client):
@@ -26,7 +25,6 @@ class ExtClient(client.Client):
     def store_response(self, clinst, text):
         self.conv.events.store(EV_RESPONSE, text)
         self.conv.events.store(EV_PROTOCOL_RESPONSE, clinst)
-        self.conv.trace.response(clinst)
 
 
 class Factory(object):

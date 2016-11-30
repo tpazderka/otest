@@ -6,6 +6,8 @@ from future.backports.urllib.parse import quote_plus
 from oic.utils.http_util import BadRequest
 from oic.utils.http_util import SeeOther
 
+from otest.events import EV_HTTP_ARGS
+
 __author__ = 'roland'
 
 logger = logging.getLogger(__name__)
@@ -168,7 +170,7 @@ class WebApplication(object):
                         except KeyError:
                             pass
                         else:
-                            _conv.trace.response("QUERY_STRING:%s" % qs)
+                            _conv.events.store(EV_HTTP_ARGS, qs)
                             _conv.query_component = qs
 
                         return inut.opresult_fragment()
