@@ -1,10 +1,10 @@
 import json
 import re
 
-#from urllib.parse import urlparse
+# from urllib.parse import urlparse
 from future.backports.urllib.parse import urlparse
+from otest.events import EV_FUNCTION
 from robobrowser import RoboBrowser
-
 
 NO_CTRL = "No submit control with the name='%s' and value='%s' could be found"
 
@@ -33,6 +33,7 @@ class RResponse():
     A Response class that behaves in the way that mechanize expects it.
     Links to a requests.Response
     """
+
     def __init__(self, resp):
         self._resp = resp
         self.index = 0
@@ -231,7 +232,7 @@ class Interaction(object):
         self.browser.submit_form(form, **requests_args)
         return self.browser.state.response
 
-    #noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal
     def chose(self, orig_response, path, **kwargs):
         """
         Sends a HTTP GET to a url given by the present url and the given
@@ -260,7 +261,7 @@ class Interaction(object):
             url = path
 
         return self.httpc.send(url, "GET", trace=_trace)
-        #return resp, ""
+        # return resp, ""
 
     def redirect(self, orig_response, url_regex, **kwargs):
         """
@@ -297,7 +298,7 @@ class Interaction(object):
     def response(self, response, **kwargs):
         return {"text": response.text}
 
-    #noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal
     def interaction(self, args):
         _type = args["type"]
         if _type == "form":
@@ -305,13 +306,14 @@ class Interaction(object):
         elif _type == "link":
             return self.chose
         elif _type == "response":
-           return self.response
+            return self.response
         elif _type == "redirect":
             return self.redirect
         elif _type == "javascript_redirect":
             return self.redirect
         else:
             return no_func
+
 
 # ========================================================================
 
@@ -324,7 +326,7 @@ class Action(object):
     def update(self, dic):
         self.args.update(dic)
 
-    #noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal
     def post_op(self, result, conv, args):
         pass
 
@@ -338,15 +340,15 @@ class Action(object):
         except (KeyError, AttributeError):
             _args = {}
 
-        _args["_trace_"] = _conv.trace
+        _args["_events_"] = _conv.events
         _args["location"] = location
         _args["features"] = features
         _args["tester"] = tester
         _args["requests_args"] = kwargs
 
-        if _conv.trace:
-            _conv.trace.reply("FUNCTION: %s" % function.__name__)
-            _conv.trace.reply("ARGS: %s" % _args)
+        if _conv.events:
+            _conv.events.store(EV_FUNCTION,
+                               {'name': function.__name__, 'args': _args})
 
         result = function(response, **_args)
         self.post_op(result, _conv, _args)

@@ -7,10 +7,12 @@ import sys
 
 from oic.utils.http_util import Response
 
-from otest.events import EV_EXCEPTION
+from otest.events import EV_EXCEPTION, EV_FUNCTION
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_RESPONSE
 from otest.verify import Verify
+
+from otest.events import EV_OP_ARGS
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +72,7 @@ class Operation(object):
             self.internal = True
 
     def run(self, *args, **kwargs):
-        pass
+        return None
 
     def post_tests(self):
         if self.tests["post"]:
@@ -91,7 +93,9 @@ class Operation(object):
             if self.tests["pre"]:
                 _ver.test_sequence(self.tests["pre"])
 
-            self.conv.trace.info("Running '{}'".format(cls_name))
+            self.conv.events.store(
+                EV_FUNCTION, {'name': cls_name, 'args': args, 'kwargs': kwargs})
+
             res = self.run(*args, **kwargs)
 
             if res:
@@ -104,7 +108,7 @@ class Operation(object):
         for op, arg in list(self.funcs.items()):
             op(self, arg)
 
-        self.conv.trace.info('op_args: {}'.format(self.op_args))
+        self.conv.events.store(EV_OP_ARGS, self.op_args)
 
     def apply_profile(self, profile_map):
         try:
@@ -112,7 +116,7 @@ class Operation(object):
         except KeyError:
             return
         else:
-            for op,arg in kwargs.items():
+            for op, arg in kwargs.items():
                 op(self, arg)
 
     def op_setup(self):
@@ -133,8 +137,8 @@ class Operation(object):
     def catch_exception(self, func, **kwargs):
         res = None
         try:
-            self.conv.trace.info(
-                "Running {} with kwargs: {}".format(func.__name__, kwargs))
+            self.conv.events.store(EV_FUNCTION,
+                                 {'name': func.__name__, 'kwargs': kwargs})
             res = func(**kwargs)
         except Exception as err:
             self.conv.events.store(EV_EXCEPTION, err)
@@ -143,7 +147,7 @@ class Operation(object):
             elif not err.__class__.__name__ == self.expect_exception:
                 raise
             else:
-                self.conv.trace.info("Got expected exception: {}".format(err))
+                self.conv.events.store(EV_EXCEPTION, err, )
         else:
             if self.expect_exception:
                 raise Exception(

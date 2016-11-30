@@ -18,6 +18,8 @@ import sys
 from subprocess import Popen, PIPE
 from oic.oauth2 import HttpError
 
+from otest.events import EV_END
+
 __author__ = 'roland'
 __version__ = '0.2.0'
 __license__ = 'Apache 2.0'
@@ -297,4 +299,4 @@ from otest.operation import Operation
 
 class Done(Operation):
     def run(self, *args, **kwargs):
-        self.conv.trace.info(END_TAG)
+        self.conv.events.store(EV_END,'')
