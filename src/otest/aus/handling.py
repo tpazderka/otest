@@ -116,7 +116,7 @@ class WebIh(InfoHandling):
 
     def _display(self, root, issuer, profile):
         item = []
-        logger.debug('curdir:{}'.format(os.curdir))
+        logger.debug('curdir:{}'.format(os.getcwd()))
         if profile:
             path = os.path.join(root, issuer, profile).replace(":", "%3A")
             argv = {"issuer": unquote(issuer), "profile": profile}
@@ -131,7 +131,7 @@ class WebIh(InfoHandling):
                     continue
                 fn = os.path.join(path, _name)
                 if os.path.isfile(fn):
-                    item.append((unquote(_name), os.path.join(profile, _name)))
+                    item.append((unquote(_name), fn))
         else:
             if issuer:
                 argv = {'issuer': unquote(issuer), 'profile': ''}
