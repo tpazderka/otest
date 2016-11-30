@@ -7,7 +7,7 @@ from otest.check import ERROR
 from otest.check import OK
 from otest.check import WARNING
 from otest.check import INCOMPLETE
-from otest.io import IO
+from otest.handling import InfoHandling
 
 __author__ = 'roland'
 
@@ -20,12 +20,12 @@ def get_test_info(session, test_id):
     return session["test_info"][test_id]
 
 
-class WebIO(IO):
+class WebIh(InfoHandling):
     def __init__(self, conf, flows, desc, profile_handler, profile, lookup,
                  cache=None, environ=None, start_response=None, session=None,
                  **kwargs):
-        IO.__init__(self, flows, profile, desc, profile_handler, cache,
-                    session=session, **kwargs)
+        InfoHandling.__init__(self, flows, profile, desc, profile_handler,
+                              cache, session=session, **kwargs)
 
         self.conf = conf
         self.lookup = lookup

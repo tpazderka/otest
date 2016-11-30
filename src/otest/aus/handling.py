@@ -11,7 +11,7 @@ from otest.check import ERROR
 from otest.check import OK
 from otest.check import WARNING
 from otest.check import INCOMPLETE
-from otest.io import IO
+from otest.handling import InfoHandling
 from otest.log import with_or_without_slash
 from otest.summation import represent_result
 from otest.summation import store_test_state
@@ -25,12 +25,12 @@ TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
                 INCOMPLETE: "INCOMPLETE"}
 
 
-class WebIO(IO):
+class WebIh(InfoHandling):
     def __init__(self, conf, flows, desc, profile_handler, profile, lookup,
                  cache=None, environ=None, start_response=None, session=None,
                  base_url='', **kwargs):
-        IO.__init__(self, flows, profile, desc, profile_handler, cache,
-                    session=session, **kwargs)
+        InfoHandling.__init__(self, flows, profile, desc, profile_handler,
+                              cache, session=session, **kwargs)
 
         self.conf = conf
         self.lookup = lookup

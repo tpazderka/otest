@@ -38,22 +38,22 @@ class WebApplication(object):
             sh.session_init()
             session['session_info'] = sh
 
-        inut = self.webio(session=sh, **self.webenv)
-        inut.environ = environ
-        inut.start_response = start_response
-        tester = self.webtester(inut, sh, **self.webenv)
+        info = self.webio(session=sh, **self.webenv)
+        info.environ = environ
+        info.start_response = start_response
+        tester = self.webtester(info, sh, **self.webenv)
         tester.check_factory = self.check.factory
 
         if path == "robots.txt":
-            return inut.static("static/robots.txt")
+            return info.static("static/robots.txt")
         elif path == "favicon.ico":
-            return inut.static("static/favicon.ico")
+            return info.static("static/favicon.ico")
         elif path.startswith("static/"):
-            return inut.static(path)
+            return info.static(path)
         elif path.startswith("jwks/"):
-            return inut.static(path)
+            return info.static(path)
         elif path.startswith("export/"):
-            return inut.static(path)
+            return info.static(path)
 
         if self.path and path.startswith(self.path):
             _path = path[len(self.path)+1:]
@@ -64,7 +64,7 @@ class WebApplication(object):
             return tester.display_test_list()
 
         if _path == "logs":
-            return inut.display_log("log", issuer="", profile="", testid="")
+            return info.display_log("log", issuer="", profile="", testid="")
         elif _path.startswith("log"):
             if _path == "log" or _path == "log/":
                 try:
@@ -87,30 +87,30 @@ class WebApplication(object):
                     parts.insert(0, tail)
                     _path = head
 
-            return inut.display_log("log", *parts)
+            return info.display_log("log", *parts)
         elif _path.startswith("tar"):
             _path = _path.replace(":", "%3A")
-            return inut.static(_path)
+            return info.static(_path)
 
         if _path == "reset":
             sh.reset_session()
-            return inut.flow_list()
+            return info.flow_list()
         elif _path == "pedit":
             try:
-                return inut.profile_edit()
+                return info.profile_edit()
             except Exception as err:
-                return inut.err_response("pedit", err)
+                return info.err_response("pedit", err)
         elif _path == "profile":
             return tester.set_profile(environ)
         elif _path.startswith("test_info"):
             p = _path.split("/")
             try:
-                return inut.test_info(p[1])
+                return info.test_info(p[1])
             except KeyError:
-                return inut.not_found()
+                return info.not_found()
         elif _path == "continue":
             resp = tester.cont(environ, self.webenv)
-            session['session_info'] = inut.session
+            session['session_info'] = info.session
             if resp:
                 return resp
             else:
@@ -119,7 +119,7 @@ class WebApplication(object):
                                            self.pick_grp(sh['conv'].test_id)))
                 return resp(environ, start_response)
         elif _path == 'display':
-            return inut.flow_list()
+            return info.flow_list()
         elif _path == "opresult":
             resp = SeeOther(
                 "{}display#{}".format(self.webenv['base_url'],
@@ -128,7 +128,7 @@ class WebApplication(object):
         # expected _path format: /<testid>[/<endpoint>]
         elif _path in sh["flow_names"]:
             resp = tester.run(_path, **self.webenv)
-            session['session_info'] = inut.session
+            session['session_info'] = info.session
 
             if resp is False or resp is True:
                 pass
@@ -136,7 +136,7 @@ class WebApplication(object):
                 return resp
 
             try:
-                #  return inut.flow_list()
+                #  return info.flow_list()
                 resp = SeeOther(
                     "{}display#{}".format(
                         self.webenv['client_info']['base_url'],
@@ -166,7 +166,7 @@ class WebApplication(object):
                         if environ["QUERY_STRING"]:
                             pass
                         else:
-                            return inut.opresult_fragment()
+                            return info.opresult_fragment()
                     elif response_type != ["code"]:
                         # but what if it's all returned as a query anyway ?
                         try:
@@ -177,12 +177,12 @@ class WebApplication(object):
                             _conv.events.store(EV_HTTP_ARGS, qs)
                             _conv.query_component = qs
 
-                        return inut.opresult_fragment()
+                        return info.opresult_fragment()
 
             try:
                 resp = tester.async_response(self.webenv["conf"])
             except Exception as err:
-                return inut.err_response("authz_cb", err)
+                return info.err_response("authz_cb", err)
             else:
                 if resp is False or resp is True:
                     pass
@@ -190,7 +190,7 @@ class WebApplication(object):
                     return resp
 
                 try:
-                    # return inut.flow_list()
+                    # return info.flow_list()
                     resp = SeeOther(
                         "{}display#{}".format(
                             self.webenv['client_info']['base_url'],

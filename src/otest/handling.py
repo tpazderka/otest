@@ -14,7 +14,7 @@ __author__ = 'roland'
 logger = logging.getLogger(__name__)
 
 
-class IO(object):
+class InfoHandling(object):
     def __init__(self, flows, profile, desc='', profile_handler=None,
                  cache=None, session=None, **kwargs):
         self.flows = flows
@@ -83,11 +83,11 @@ class IO(object):
                         message="Error in %s" % where))
 
 
-class ClIO(IO):
+class ClIh(InfoHandling):
     def __init__(self, flows, profile, desc='', profile_handler=None,
                  cache=None, session=None, **kwargs):
-        IO.__init__(self, flows, profile, desc, profile_handler, cache,
-                    session=session, **kwargs)
+        InfoHandling.__init__(self, flows, profile, desc, profile_handler,
+                              cache, session=session, **kwargs)
 
     def flow_list(self):
         pass
@@ -95,5 +95,3 @@ class ClIO(IO):
     def result(self):
         _state = eval_state(self.session["conv"].events)
         print(("{} {}".format(SIGN[_state], self.session["node"].name)))
-
-
