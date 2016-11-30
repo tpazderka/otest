@@ -79,14 +79,12 @@ class WebIO(IO):
                         template_lookup=self.lookup,
                         headers=[])
 
-        _conv = self.session["conv"]
         info = get_test_info(self.session, testid)
 
         argv = {
             "profile": info["profile_info"],
-            "trace": info["trace"],
-            "events": info["events"],
-            "result": represent_result(_conv.events).replace("\n", "<br>\n"),
+            "events": info['events'],
+            "result": represent_result(info['events']).replace("\n", "<br>\n"),
             'base': self.base_url
         }
 
