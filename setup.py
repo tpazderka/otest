@@ -20,9 +20,13 @@ from setuptools import setup, find_packages
 
 __author__ = 'roland'
 
+with open('src/oic/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
 
 setup(
-    version = '0.1.0',
+    version = version,
     name="otest",
     description="Basic Test framework for testing OAuth2/OIDC Authorization "
                 "server and relaying party implementations",

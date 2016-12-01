@@ -1,12 +1,11 @@
 import logging
 import os
 
-from future.backports.urllib.parse import quote_plus
-
 from oic.utils.http_util import BadRequest
 from oic.utils.http_util import SeeOther
 
 from otest.events import EV_HTTP_ARGS
+from otest.result import safe_url
 
 __author__ = 'roland'
 
@@ -71,12 +70,8 @@ class WebApplication(object):
                     _iss = self.webenv['client_info']["provider_info"]["issuer"]
                 except KeyError:
                     _iss = self.webenv['tool_conf']['issuer']
-                if _iss.startswith('https://'):
-                    _iss = 's_' + _iss[8:]
-                elif _iss.startswith('http://'):
-                    _iss = _iss[7:]
 
-                parts = [quote_plus(_iss)]
+                parts = [safe_url(_iss)]
             else:
                 parts = []
                 while _path != "log":

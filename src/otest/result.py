@@ -35,15 +35,27 @@ def get_issuer(conv):
                 return 'unknown'
 
 
-def safe_path(eid, *args):
-    if eid.startswith('https://'):
-        eid = 's_'+eid[8:]
-    elif eid.startswith('http://'):
-        eid = eid[7:]
+def safe_url(url):
+    if url.startswith('https://'):
+        url = 's_'+url[8:]
+    elif url.startswith('http://'):
+        url = url[7:]
 
-    s = quote(eid)
+    s = quote(url)
     s = s.replace('/', '%2F')
+    s = s.replace('%','')
+    s = s.replace('//', '/')
+    return s
 
+
+def safe_path(eid, *args):
+    """
+
+    :param eid: Entity (Issuer) ID, a URL
+    :param args: Additional arguments
+    :return: A URL and reverse proxy safe path
+    """
+    s = safe_url(eid)
     path = 'log/{}'.format(s)
     for arg in args[:-1]:
         path = '{}/{}'.format(path, arg)
