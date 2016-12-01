@@ -92,8 +92,8 @@ class Result(object):
             _iss = get_issuer(self.session['conv'])
             if _iss.endswith('/'+test_id):
                 _iss = _iss[:-(len(test_id)+1)]
-
-            file_name = safe_path(_iss, self.session['profile'],
+            _tag = self.session['conv'].tool_config['tag']
+            file_name = safe_path(_iss, _tag,
                                   self.session['testid'])
 
         if 'conv' not in self.session:
