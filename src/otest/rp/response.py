@@ -1,4 +1,4 @@
-from otest.events import EV_SEND
+from otest.events import EV_SEND, EV_RUN
 from otest.events import EV_REDIRECT_URL
 from otest.events import EV_HTTP_RESPONSE
 from otest.operation import Operation
@@ -57,8 +57,6 @@ class Response(Operation):
         self.conv.events.store(EV_REDIRECT_URL, send_args['url'])
         res = self.entity.send(**send_args)
         self.conv.events.store(EV_HTTP_RESPONSE, res)
-        self.trace.info("Got a {} response".format(res.status_code))
-        self.trace.info("Received HTML: {}".format(res.text))
         return res
 
 
@@ -77,6 +75,4 @@ class RedirectResponse(Response):
         self.conv.events.store(EV_REDIRECT_URL, send_args['url'])
         res = self.entity.send(**send_args)
         self.conv.events.store(EV_HTTP_RESPONSE, res)
-        self.trace.info("Got a {} response".format(res.status_code))
-        self.trace.info("Received HTML: {}".format(res.text))
         return res

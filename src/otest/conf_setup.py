@@ -69,10 +69,10 @@ def construct_app_args(args, conf, operations, func, default_profiles,
             print('Port not in path2port map file {}'.format(args.path2port))
             sys.exit(-1)
 
-        if args.xport:
-            _base = '{}:{}/{}/'.format(conf.BASE, str(_port), _path)
-        else:
-            _base = '{}/{}/'.format(conf.BASE, _path)
+        # if args.xport:
+        #     _base = '{}:{}/{}/'.format(conf.BASE, str(_port), _path)
+        # else:
+        _base = '{}/{}/'.format(conf.BASE, _path)
     else:
         if _port not in [443, 80]:
             _base = '{}:{}'.format(conf.BASE, _port)
@@ -140,10 +140,10 @@ def construct_app_args(args, conf, operations, func, default_profiles,
 
     # Test profile either as a command line argument or if not that
     # from the configuration file
-    if args.profile:
-        _profile = args.profile
-    else:
-        _profile = inst_conf['tool']['profile']
+    # if args.profile:
+    #     _profile = args.profile
+    # else:
+    _profile = inst_conf['tool']['profile']
 
     # Application arguments
     app_args = {

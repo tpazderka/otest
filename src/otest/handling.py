@@ -66,11 +66,6 @@ class InfoHandling(object):
 
         if "conv" in session:
             if err:
-                if isinstance(err, str):
-                    pass
-                else:
-                    session["conv"].trace.error("%s:%s" % (
-                        err.__class__.__name__, str(err)))
                 session["conv"].events.store(EV_CONDITION,
                                              State("Fault", status=ERROR,
                                                    name=err_type,

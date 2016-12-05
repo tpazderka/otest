@@ -43,6 +43,62 @@ class NoSuchEvent(Exception):
     pass
 
 
+class Base(object):
+    def __init__(self, **kwargs):
+        self.op_args = kwargs
+
+    def gather_args(self):
+        return self.op_args
+
+    def to_str(self):
+        _res = self.gather_args()
+        return json.dumps(_res, sort_keys=True, indent=4,
+                          separators=(',', ': '))
+
+
+class Operation(Base):
+    def __init__(self, name, typ='', **kwargs):
+        Base.__init__(self, **kwargs)
+        self.name = name
+        self.type = typ
+
+    def gather_args(self):
+        _res = {'name': self.name}
+        if self.type:
+            _res['type'] = self.type
+        _res.update(Base.gather_args(self))
+        return _res
+
+
+class FailedOperation(Operation):
+    def __init__(self, name, error, **kwargs):
+        Operation.__init__(self, name, **kwargs)
+        self.error = error
+
+    def gather_args(self):
+        _res = {'name': self.name, 'error': self.error}
+        if self.type:
+            _res['type'] = self.type
+        _res.update(self.op_args)
+        return _res
+
+
+class HTTPRequest(Base):
+    def __init__(self, endpoint, method):
+        Base.__init__(self)
+        self.endpoint = endpoint
+        self.method = method
+        self.authz = None
+
+    def gather_args(self):
+        _res = {}
+        for k in ['endpoint', 'method','authz']:
+            v = getattr(self, k)
+            if v:
+                _res[k] = v
+        return _res
+
+
 class HTTPResponse(object):
     def __init__(self, response):
         try:
@@ -303,6 +359,9 @@ def layout(start, event):
         elem.extend(TO_STR[event.typ](event))
     except KeyError:
         elem.append(event.typ)
-        elem.append(str(event.data))
+        if isinstance(event.data, Base):
+            elem.append(event.data.to_str())
+        else:
+            elem.append(str(event.data))
 
     return ' '.join(elem)

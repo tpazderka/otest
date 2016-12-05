@@ -97,95 +97,95 @@ def as_unicode(b):
     return b
 
 
-class Trace(object):
-    def __init__(self, absolut_start=False):
-        self.trace = []
-        self.start = time.time()
-        if absolut_start:
-            self.trace.append("Trace init: {}".format(
-                time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))
-
-    @staticmethod
-    def format(resp):
-        raise NotImplemented()
-
-    def request(self, msg):
-        delta = time.time() - self.start
-        self.trace.append("%f --> %s" % (delta, msg))
-
-    def reply(self, msg):
-        delta = time.time() - self.start
-        self.trace.append("%f <-- %s" % (delta, msg))
-
-    def info(self, msg):
-        delta = time.time() - self.start
-        self.trace.append("%f %s" % (delta, msg))
-
-    def error(self, msg):
-        delta = time.time() - self.start
-        self.trace.append("%f [ERROR] %s" % (delta, msg))
-
-    def warning(self, msg):
-        delta = time.time() - self.start
-        self.trace.append("%f [WARNING] %s" % (delta, msg))
-
-    def __str__(self):
-        return "\n".join([as_unicode(t) for t in self.trace])
-
-    def clear(self):
-        self.trace = []
-
-    def __getitem__(self, item):
-        return self.trace[item]
-
-    def __next__(self):
-        for line in self.trace:
-            yield line
-
-    def lastline(self):
-        try:
-            return self.trace[-1]
-        except IndexError:
-            return ""
-
-    @staticmethod
-    def format(resp):
-        _d = {"claims": resp.to_dict()}
-        if resp.jws_header:
-            _d["jws header parameters"] = resp.jws_header
-        if resp.jwe_header:
-            _d["jwe header parameters"] = resp.jwe_header
-        return _d
-
-    def response(self, resp):
-        delta = time.time() - self.start
-        try:
-            cl_name = resp.__class__.__name__
-        except AttributeError:
-            cl_name = ""
-
-        if cl_name == "IdToken":
-            txt = json.dumps({"id_token": self.format(resp)},
-                             sort_keys=True, indent=2, separators=(',', ': '))
-            self.trace.append("%f %s: %s" % (delta, cl_name, txt))
-        else:
-            try:
-                dat = resp.to_dict()
-            except AttributeError:
-                txt = resp
-                self.trace.append("%f %s" % (delta, txt))
-            else:
-                if cl_name == "OpenIDSchema":
-                    cl_name = "UserInfo"
-                    if resp.jws_header or resp.jwe_header:
-                        dat = self.format(resp)
-                elif "id_token" in dat:
-                    dat["id_token"] = self.format(resp["id_token"])
-
-                txt = json.dumps(dat, sort_keys=True, indent=2,
-                                 separators=(',', ': '))
-
-                self.trace.append("%f %s: %s" % (delta, cl_name, txt))
+# class Trace(object):
+#     def __init__(self, absolut_start=False):
+#         self.trace = []
+#         self.start = time.time()
+#         if absolut_start:
+#             self.trace.append("Trace init: {}".format(
+#                 time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))
+#
+#     @staticmethod
+#     def format(resp):
+#         raise NotImplemented()
+#
+#     def request(self, msg):
+#         delta = time.time() - self.start
+#         self.trace.append("%f --> %s" % (delta, msg))
+#
+#     def reply(self, msg):
+#         delta = time.time() - self.start
+#         self.trace.append("%f <-- %s" % (delta, msg))
+#
+#     def info(self, msg):
+#         delta = time.time() - self.start
+#         self.trace.append("%f %s" % (delta, msg))
+#
+#     def error(self, msg):
+#         delta = time.time() - self.start
+#         self.trace.append("%f [ERROR] %s" % (delta, msg))
+#
+#     def warning(self, msg):
+#         delta = time.time() - self.start
+#         self.trace.append("%f [WARNING] %s" % (delta, msg))
+#
+#     def __str__(self):
+#         return "\n".join([as_unicode(t) for t in self.trace])
+#
+#     def clear(self):
+#         self.trace = []
+#
+#     def __getitem__(self, item):
+#         return self.trace[item]
+#
+#     def __next__(self):
+#         for line in self.trace:
+#             yield line
+#
+#     def lastline(self):
+#         try:
+#             return self.trace[-1]
+#         except IndexError:
+#             return ""
+#
+#     @staticmethod
+#     def format(resp):
+#         _d = {"claims": resp.to_dict()}
+#         if resp.jws_header:
+#             _d["jws header parameters"] = resp.jws_header
+#         if resp.jwe_header:
+#             _d["jwe header parameters"] = resp.jwe_header
+#         return _d
+#
+#     def response(self, resp):
+#         delta = time.time() - self.start
+#         try:
+#             cl_name = resp.__class__.__name__
+#         except AttributeError:
+#             cl_name = ""
+#
+#         if cl_name == "IdToken":
+#             txt = json.dumps({"id_token": self.format(resp)},
+#                              sort_keys=True, indent=2, separators=(',', ': '))
+#             self.trace.append("%f %s: %s" % (delta, cl_name, txt))
+#         else:
+#             try:
+#                 dat = resp.to_dict()
+#             except AttributeError:
+#                 txt = resp
+#                 self.trace.append("%f %s" % (delta, txt))
+#             else:
+#                 if cl_name == "OpenIDSchema":
+#                     cl_name = "UserInfo"
+#                     if resp.jws_header or resp.jwe_header:
+#                         dat = self.format(resp)
+#                 elif "id_token" in dat:
+#                     dat["id_token"] = self.format(resp["id_token"])
+#
+#                 txt = json.dumps(dat, sort_keys=True, indent=2,
+#                                  separators=(',', ': '))
+#
+#                 self.trace.append("%f %s: %s" % (delta, cl_name, txt))
 
 
 def start_script(path, wdir="", *args):

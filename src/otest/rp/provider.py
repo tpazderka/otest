@@ -13,7 +13,7 @@ from oic.oauth2.message import AccessTokenRequest
 from oic.oauth2.message import ASConfigurationResponse
 from oic.utils.keyio import keyjar_init
 
-from otest.events import EV_PROTOCOL_REQUEST
+from otest.events import EV_PROTOCOL_REQUEST, EV_HTTP_RESPONSE
 
 __author__ = 'roland'
 
@@ -51,7 +51,6 @@ class Provider(provider.Provider):
         self.claim_access_token = {}
         self.init_keys = []
         self.update_key_use = ""
-        self.trace = None
         self.events = event_db
         self.userinfo = userinfo
         self.template_lookup = template_lookup
@@ -126,8 +125,7 @@ class Provider(provider.Provider):
             pass
         else:
             if _resp.status_code == 200:
-                self.trace.info(
-                    "Request from request_uri: {}".format(_resp.text))
+                self.events.store(EV_HTTP_RESPONSE, _resp)
 
         return _response
 
@@ -205,10 +203,10 @@ class Provider(provider.Provider):
                             self.init_keys.append(key)
             else:
                 for kb in self.keyjar[client_id]:
-                    self.trace.info("Updating client keys")
+                    self.events.store("Updating client keys", '')
                     kb.update()
                     if kb.imp_jwks:
-                        self.trace.info("Client JWKS: {}".format(kb.imp_jwks))
+                        self.events.store("Client JWKS´", kb.imp_jwks)
                 same = 0
                 # Verify that the new keys are not the same
                 for kb in self.keyjar[client_id]:
@@ -219,14 +217,14 @@ class Provider(provider.Provider):
                             if key in self.init_keys:
                                 same += 1
                             else:
-                                self.trace.info("New key: {}".format(key))
+                                self.events.store("New key", key)
                 if same == len(self.init_keys):  # no change
-                    self.trace.info("No change in keys")
+                    self.events.store("No change in keys")
                     raise TestError("Keys unchanged")
                 else:
-                    self.trace.info(
-                        "{} keys changed, {} keys the same".format(
-                            len(self.init_keys) - same, same))
+                    self.events.store('Key modifications',
+                                      "{} changed, {} same".format(
+                                          len(self.init_keys) - same, same))
 
     def __setattr__(self, key, value):
         if key == "keys":

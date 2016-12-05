@@ -67,8 +67,7 @@ class WebIh(InfoHandling):
 
         argv = {
             "profile": info["profile_info"],
-            "trace": info["trace"],
-            "events": info["events"].timeline(),
+            "events": info["events"],
             "result": represent_result(_conv.events).replace("\n", "<br>\n"),
             "base": self.base_url,
         }

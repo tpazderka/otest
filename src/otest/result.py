@@ -87,14 +87,14 @@ class Result(object):
                 raise
         return {}
 
-    def write_info(self, test_id, file_name=None):
+    def write_info(self, test_id, file_name=None, tag=''):
         if file_name is None:
             _iss = get_issuer(self.session['conv'])
             if _iss.endswith('/'+test_id):
                 _iss = _iss[:-(len(test_id)+1)]
-            _tag = self.session['conv'].tool_config['tag']
-            file_name = safe_path(_iss, _tag,
-                                  self.session['testid'])
+            if not tag:
+                tag = self.session['conv'].tool_config['tag']
+            file_name = safe_path(_iss, tag, self.session['testid'])
 
         if 'conv' not in self.session:
             return
@@ -136,7 +136,6 @@ class Result(object):
             "index": self.session["index"],
             # "seqlen": len(self.session["seq_info"]["sequence"]),
             "test_output": self.session["conv"].events.get('condition'),
-            "trace": self.session["conv"].trace,
         }
 
         try:

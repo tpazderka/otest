@@ -244,11 +244,6 @@ class Interaction(object):
         :return: The response do_click() returns
         """
 
-        try:
-            _trace = kwargs["trace"]
-        except KeyError:
-            _trace = False
-
         if not path.startswith("http"):
             try:
                 _url = orig_response.url
@@ -260,7 +255,7 @@ class Interaction(object):
         else:
             url = path
 
-        return self.httpc.send(url, "GET", trace=_trace)
+        return self.httpc.send(url, "GET")
         # return resp, ""
 
     def redirect(self, orig_response, url_regex, **kwargs):

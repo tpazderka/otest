@@ -70,8 +70,7 @@ class WebTester(tool.Tester):
                                      kw_args['as_args']['jwks_name'])
         _ent.name = _ent.baseurl
         self.conv = Conversation(_flow, _ent,
-                                 msg_factory=kw_args["msg_factory"],
-                                 trace_cls=self.trace_cls)
+                                 msg_factory=kw_args["msg_factory"])
         self.conv.sequence = self.sh["sequence"]
         _ent.conv = self.conv
         self.sh["conv"] = self.conv

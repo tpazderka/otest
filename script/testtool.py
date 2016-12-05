@@ -25,14 +25,13 @@ from oic.utils.http_util import ServiceError
 from oic.utils.http_util import SeeOther
 from oic.utils import http_util
 
-from otest import Trace
-from otest.events import Events, EV_HTTP_REQUEST
+from otest.events import Events
 from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
 from otest.parse_cnf import parse_yaml_conf
 from otest.session import SessionHandler
 from otest.rp.endpoints import static_mime
-from otest.rp.io import WebIO
+from otest.rp.handling import WebIh
 from otest.rp.setup import as_arg_setup
 from otest.rp.tool import WebTester
 
@@ -119,6 +118,7 @@ def absolute_url(url, startpage):
 
     (scheme, netloc, path, params, query, fragment) = urlparse(startpage)
     return '{}://{}{}'.format(scheme, netloc, url)
+
 
 # =============================================================================
 
@@ -261,7 +261,7 @@ class Application(object):
         jlog.info({"remote_addr": environ["REMOTE_ADDR"],
                    "path": path})
 
-        #self.events.store(EV_REQUEST, path)
+        # self.events.store(EV_REQUEST, path)
 
         try:
             sh = session['session_info']
@@ -270,11 +270,11 @@ class Application(object):
             sh.session_init()
             session['session_info'] = sh
 
-        inut = WebIO(session=sh, **self.kwargs)
-        inut.environ = environ
-        inut.start_response = start_response
+        info = WebIh(session=sh, **self.kwargs)
+        info.environ = environ
+        info.start_response = start_response
 
-        tester = WebTester(inut, sh, **self.kwargs)
+        tester = WebTester(info, sh, **self.kwargs)
 
         if 'path' in self.kwargs and path.startswith(self.kwargs['path']):
             _path = path[len(kwargs['path']) + 1:]
@@ -333,7 +333,7 @@ class Application(object):
             if res:
                 return res
         elif _path == 'display':
-            return inut.flow_list()
+            return info.flow_list()
         elif _path == "opresult":
             try:
                 _display_path = '/{}/display'.format(self.kwargs['path'])
@@ -346,9 +346,9 @@ class Application(object):
         elif _path.startswith("test_info"):
             p = _path.split("/")
             try:
-                return inut.test_info(p[1])
+                return info.test_info(p[1])
             except KeyError:
-                return inut.not_found()
+                return info.not_found()
         elif _path == 'all':
             for test_id in sh['flow_names']:
                 resp = tester.run(test_id, **self.kwargs)
@@ -392,7 +392,7 @@ class Application(object):
                         res = self.see_other_to_get(resp, sh)
                         # res is probably a redirect
                         # send the user back to the test list page
-                        return inut.flow_list()
+                        return info.flow_list()
                     else:
                         return resp(environ, start_response)
                 elif isinstance(resp, Response):
@@ -554,14 +554,13 @@ if __name__ == '__main__':
               'flows': fdef['Flows'], 'order': fdef['Order'],
               "profile": args.profile, 'desc': fdef['Desc'],
               "msg_factory": tool_args['cls_factories'],
-              "check_factory": tool_args['chk_factory'],
-              'conf': config, "cache": {}, 'op_profiles': _op_profiles,
+              "check_factory": tool_args['chk_factory'], 'conf': config,
+              "cache": {}, 'op_profiles': _op_profiles,
               "profile_handler": tool_args['profile_handler'], 'map_prof': None,
-              'trace_cls': Trace, 'lookup': LOOKUP,
-              'make_entity': make_entity, 'base_dir': base_dir,
-              'signing_key': keys, 'provider_cls': tool_args['provider'],
-              'as_args': as_args, 'response_cls': http_util.Response,
-              'internal': args.internal
+              'lookup': LOOKUP, 'make_entity': make_entity,
+              'base_dir': base_dir, 'signing_key': keys,
+              'provider_cls': tool_args['provider'], 'as_args': as_args,
+              'response_cls': http_util.Response, 'internal': args.internal
               }
 
     if args.ca_certs:

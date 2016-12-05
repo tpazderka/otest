@@ -3,7 +3,6 @@ import logging
 from otest import ConditionError
 from otest import Done
 from otest import exception_trace
-from otest import Trace
 from otest.check import OK
 from otest.check import State
 from otest.conversation import Conversation
@@ -36,7 +35,7 @@ class ConfigurationError(Exception):
 class Tester(object):
     def __init__(self, inut, sh, profile, flows=None, check_factory=None,
                  msg_factory=None, cache=None, make_entity=None, map_prof=None,
-                 trace_cls=None, com_handler=None, response_cls=None,
+                 com_handler=None, response_cls=None,
                  client_factory=None, **kwargs):
         self.inut = inut
         self.sh = sh
@@ -50,7 +49,6 @@ class Tester(object):
         self.kwargs = kwargs
         self.make_entity = make_entity
         self.map_prof = map_prof
-        self.trace_cls = trace_cls
         self.com_handler = com_handler
         self.cjar = {}
         self.response_cls = response_cls
@@ -67,7 +65,7 @@ class Tester(object):
         _cli, _cli_info = self.client_factory.make_client(
             **kw_args['client_info'])
         self.conv = Conversation(_flow, _cli, kw_args["msg_factory"],
-                                 trace_cls=Trace, callback_uris=redirs)
+                                 callback_uris=redirs)
         self.conv.entity_config = _cli_info
         self.conv.tool_config = kw_args['tool_conf']
         _cli.conv = self.conv

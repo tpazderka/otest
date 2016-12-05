@@ -1,6 +1,5 @@
 import json
 import logging
-from otest import Trace
 from otest.interaction import Interaction
 from otest.events import Events
 
@@ -11,12 +10,11 @@ logger = logging.getLogger(__name__)
 
 class Conversation(object):
     def __init__(self, flow, entity, msg_factory, check_factory=None,
-                 features=None, trace_cls=Trace, interaction=None, opid=None,
+                 features=None, interaction=None, opid=None,
                  **extra_args):
         self.flow = flow
         self.entity = entity
         self.msg_factory = msg_factory
-        self.trace = trace_cls(True)
         self.events = Events()
         self.interaction = Interaction(self.entity, interaction)
         self.check_factory = check_factory
@@ -29,7 +27,6 @@ class Conversation(object):
         self.comhandler = None
         self.exception = None
         self.sequence = []
-        self.trace.info('Conversation initiated')
         self.cache = {}
         self.tool_config = {}
         self.conf = None
@@ -43,7 +40,6 @@ class Conversation(object):
                 "client_id": self.entity.client_id,
                 "client_secret": self.entity.client_secret,
             },
-            "trace_log": {"start": self.trace.start, "trace": self.trace.trace},
             "sequence": self.flow,
             "flow_index": self.index,
             "client_config": self.entity.conf,
