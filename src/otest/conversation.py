@@ -1,6 +1,6 @@
 import json
 import logging
-from otest.interaction import Interaction
+#from otest.interaction import Interaction
 from otest.events import Events
 
 __author__ = 'roland'
@@ -10,13 +10,12 @@ logger = logging.getLogger(__name__)
 
 class Conversation(object):
     def __init__(self, flow, entity, msg_factory, check_factory=None,
-                 features=None, interaction=None, opid=None,
-                 **extra_args):
+                 features=None, opid=None, **extra_args):
         self.flow = flow
         self.entity = entity
         self.msg_factory = msg_factory
         self.events = Events()
-        self.interaction = Interaction(self.entity, interaction)
+        #self.interaction = Interaction(self.entity, interaction)
         self.check_factory = check_factory
         self.features = features
         self.operator_id = opid
