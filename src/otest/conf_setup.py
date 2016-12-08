@@ -30,11 +30,16 @@ def construct_app_args(args, conf, operations, func, default_profiles,
 
     # setup_logging("%s/rp_%s.log" % (SERVER_LOG_FOLDER, _port), logger)
 
+    if args.flows:
+        _flows = args.flows
+    else:
+        _flows = conf.FLOWS
+
     fdef = {'Flows': {}, 'Order': [], 'Desc': {}}
     cls_factories = {'': operations.factory}
     func_factory = func.factory
 
-    for flow_def in args.flows:
+    for flow_def in _flows:
         spec = parse_yaml_conf(flow_def, cls_factories, func_factory)
         fdef['Flows'].update(spec['Flows'])
         fdef['Desc'].update(spec['Desc'])

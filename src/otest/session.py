@@ -9,6 +9,15 @@ __author__ = 'roland'
 logger = logging.getLogger(__name__)
 
 
+def pmap(sprof, prof):
+    p = sprof.split('.')
+    rt = prof.split('.')
+    if rt[0] == '*' or p[0] in rt:
+        return True
+    else:
+        return False
+
+
 class Node(object):
     def __init__(self, name, desc, mti=None):
         self.name = name
@@ -52,10 +61,14 @@ class SessionHandler(object):
         self["index"] = index
 
     def init_session(self, profile=None):
-        _flows = sort(self.order, self.test_flows)
-        self["flow_names"] = [f.name for f in _flows]
+        if profile is None:
+            profile = self.profile
 
-        _tests =[]
+        _flows = sort(self.order, self.test_flows)
+        self["flow_names"] = [i.name for i in _flows if
+                              pmap(profile, i.desc['profile'])]
+
+        _tests = []
         for k in self["flow_names"]:
             try:
                 kwargs = {"mti": self.test_flows[k]["mti"]}
@@ -65,7 +78,7 @@ class SessionHandler(object):
 
         self["tests"] = _tests
         self["test_info"] = {}
-        self["profile"] = profile or self.profile
+        self["profile"] = profile
         return self._dict
 
     def reset_session(self, profile=None):

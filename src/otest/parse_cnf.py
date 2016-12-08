@@ -100,16 +100,23 @@ def parse_json_conf(cnf_file, cls_factories, func_factory, use=''):
                     raise SyntaxError(tid)
                 key, val = list(oper.items())[0]
                 try:
-                    seq.append((_get_cls(key, cls_factories, use),
-                                _get_func(val, func_factory)))
+                    _cls = _get_cls(key, cls_factories, use)
                 except Exception:
-                    print('tid:{}'.format(tid))
+                    print('Failed to get class on tid:{}'.format(tid))
                     raise
+                else:
+                    try:
+                        _func = _get_func(val, func_factory)
+                    except Exception:
+                        print('Failed to get function on tid:{}'.format(tid))
+                        raise
+                    else:
+                        seq.append((_cls,_func))
             else:
                 try:
                     seq.append(_get_cls(oper, cls_factories, use))
                 except Exception:
-                    print('tid:{}'.format(tid))
+                    print('Failed to get class on tid:{}'.format(tid))
                     raise
         spec["sequence"] = seq
 
