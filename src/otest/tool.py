@@ -69,7 +69,7 @@ class Tester(object):
         self.conv.entity_config = _cli_info
         self.conv.tool_config = kw_args['tool_conf']
         _cli.conv = self.conv
-        _cli.event_store = self.conv.events
+        _cli.events = self.conv.events
         self.sh.session_setup(path=test_id)
         self.sh["conv"] = self.conv
         self.conv.sequence = self.sh["sequence"]
