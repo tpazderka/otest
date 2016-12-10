@@ -526,7 +526,7 @@ if __name__ == '__main__':
     keep = []
     for key, val in fdef['Flows'].items():
         for p in args.profile:
-            if p in val['profiles']:
+            if p in val['profile']:
                 keep.append(key)
 
     for key in list(fdef['Flows'].keys()):
