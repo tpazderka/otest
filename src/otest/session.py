@@ -10,8 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 def pmap(sprof, prof):
-    p = sprof.split('.')
-    rt = prof.split('.')
+    try:
+        p = sprof.split('.')
+    except AttributeError:
+        p = sprof
+
+    try:
+        rt = prof.split('.')
+    except AttributeError:
+        rt = prof
+
     if rt[0] == '*' or p[0] in rt:
         return True
     else:
