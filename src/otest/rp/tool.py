@@ -49,7 +49,7 @@ class WebTester(tool.Tester):
     def match_profile(self, test_id, **kwargs):
         _spec = self.flows[test_id]
         # There must be an intersection between the two profile lists.
-        if set(self.profile).intersection(set(_spec["profiles"])):
+        if set(self.profile).intersection(set(_spec["profile"])):
             return True
         else:
             return False
@@ -73,6 +73,7 @@ class WebTester(tool.Tester):
                                  msg_factory=kw_args["msg_factory"])
         self.conv.sequence = self.sh["sequence"]
         _ent.conv = self.conv
+        _ent.events = self.conv.events
         self.sh["conv"] = self.conv
         return True
 
