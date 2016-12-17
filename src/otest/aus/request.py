@@ -167,7 +167,12 @@ class SyncRequest(Request):
                 except KeyError:
                     pass
                 else:
-                    self.conv.events.store('JWS header', _id_token.jws_header)
+                    if _id_token.jws_header:
+                        self.conv.events.store('JWS header',
+                                               _id_token.jws_header)
+                    if _id_token.jwe_header:
+                        self.conv.events.store('JWE header',
+                                               _id_token.jwe_header)
                     if "kid" not in _id_token.jws_header and not \
                                     _id_token.jws_header["alg"] == "HS256":
                         keys = self.conv.entity.keyjar.keys_by_alg_and_usage(
