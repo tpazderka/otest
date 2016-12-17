@@ -1,11 +1,10 @@
 import inspect
 import logging
-import requests
 import copy
 import sys
 
 from bs4 import BeautifulSoup
-#from urllib.parse import parse_qs
+# from urllib.parse import parse_qs
 from future.backports.urllib.parse import parse_qs
 from requests.models import Response
 
@@ -152,6 +151,12 @@ class SyncRequest(Request):
             _ent = self.conv.entity
             resp.verify(keyjar=_ent.keyjar, client_id=_ent.client_id,
                         iss=_ent.provider_info['issuer'])
+        elif r.status_code == 400:
+            if r.headers['content-type'] == 'application/json':
+                resp = ErrorResponse().from_json(r.text)
+            else:
+                resp = ErrorResponse(error='service_error',
+                                     error_description=r.text)
         else:
             resp = r
 
@@ -321,8 +326,8 @@ class AsyncRequest(Request):
             response = _conv.entity.parse_response(
                 resp_cls, info, _ctype,
                 self.csi["state"],
-                keyjar=_conv.entity.keyjar  #, algs=algs
-                )
+                keyjar=_conv.entity.keyjar  # , algs=algs
+            )
         except ResponseError as err:
             return inut.err_response("run_sequence", err)
         except Exception as err:
