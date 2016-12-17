@@ -7,7 +7,9 @@ import sys
 
 from oic.utils.http_util import Response
 
-from otest.events import EV_EXCEPTION, EV_FUNCTION
+from otest.events import EV_EVENT
+from otest.events import EV_EXCEPTION
+from otest.events import EV_FUNCTION
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_RESPONSE
 from otest.verify import Verify
@@ -84,7 +86,7 @@ class Operation(object):
         if self.skip:
             return
         else:
-            cls_name =  self.__class__.__name__
+            cls_name = self.__class__.__name__
             if self.tests["pre"] or self.tests["post"]:
                 _ver = Verify(self.check_factory, self.conv, cls_name=cls_name)
             else:
@@ -105,7 +107,7 @@ class Operation(object):
         for op, arg in list(self.funcs.items()):
             op(self, arg)
 
-        #self.conv.events.store(EV_OP_ARGS, self.op_args)
+            # self.conv.events.store(EV_OP_ARGS, self.op_args)
 
     def apply_profile(self, profile_map):
         try:
@@ -138,15 +140,20 @@ class Operation(object):
                                    {'name': func.__name__, 'kwargs': kwargs})
             res = func(**kwargs)
         except Exception as err:
-            self.conv.events.store(EV_EXCEPTION, err)
+            self.conv.events.store(
+                EV_EXCEPTION, '{}:{}'.format(err.__class__.__name__, err))
             if not self.expect_exception:
                 raise
             elif not err.__class__.__name__ == self.expect_exception:
                 raise
             else:
-                self.conv.events.store(EV_EXCEPTION, err, note='expected')
+                self.conv.events.store(
+                    EV_EVENT,
+                    'got expected exception {}'.format(self.expect_exception))
         else:
             if self.expect_exception:
+                self.conv.events.store(
+                    EV_EVENT, 'Expected exception did not occur')
                 raise Exception(
                     "Expected exception '{}'.".format(self.expect_exception))
             if res:
