@@ -9,7 +9,6 @@ from future.backports.urllib.parse import parse_qs
 from requests.models import Response
 
 from oic.exception import IssuerMismatch
-from oic.exception import PyoidcError
 from oic.oauth2 import ResponseError
 from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import Message
@@ -135,7 +134,7 @@ class SyncRequest(Request):
         elif r.status_code == 200:
             if "response_mode" in csi and csi["response_mode"] == "form_post":
                 resp = self.response()
-                forms = BeautifulSoup(r.content).findAll('form')
+                forms = BeautifulSoup(r.text).findAll('form')
                 for inp in forms[0].find_all("input"):
                     resp[inp.attrs["name"]] = inp.attrs["value"]
             else:
@@ -181,10 +180,10 @@ class SyncRequest(Request):
                             usage='sig'
                         )
                         if len(keys) > 1:
-                            raise PyoidcError("No 'kid' in id_token header!")
+                            raise ParameterError("No 'kid' in id_token header!")
 
                     if self.req_args['nonce'] != _id_token['nonce']:
-                        raise PyoidcError(
+                        raise ParameterError(
                             "invalid nonce! {} != {}".format(
                                 self.req_args['nonce'], _id_token['nonce']))
 
