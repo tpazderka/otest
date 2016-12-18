@@ -3,11 +3,14 @@ import logging
 from otest import ConditionError
 from otest import Done
 from otest import exception_trace
+from otest.check import CRITICAL
+from otest.check import ERROR
 from otest.check import OK
 from otest.check import State
 from otest.conversation import Conversation
 from otest.events import EV_CONDITION, EV_FAULT
 from otest.result import Result
+from otest.summation import eval_state
 from otest.summation import store_test_state
 from otest.verify import Verify
 
@@ -110,7 +113,7 @@ class Tester(object):
         res = Result(self.sh, self.kwargs['profile_handler'])
 
         if index >= len(self.conv.sequence):
-            return None
+            return CRITICAL
 
         _oper = None
         for item in self.conv.sequence[index:]:
@@ -138,7 +141,7 @@ class Tester(object):
                 store_test_state(self.sh, self.conv.events)
                 res.store_test_info()
                 res.write_info(test_id, self.fname(test_id))
-                return False
+                return ERROR
             except Exception as err:
                 exception_trace('run_flow', err)
                 self.conv.events.store(EV_FAULT, err)
@@ -146,7 +149,7 @@ class Tester(object):
                 store_test_state(self.sh, self.conv.events)
                 res.store_test_info()
                 res.write_info(test_id, self.fname(test_id))
-                return False
+                return CRITICAL
             else:
                 if isinstance(resp, self.response_cls):
                     return resp
@@ -168,7 +171,7 @@ class Tester(object):
                 store_test_state(self.sh, self.conv.events)
                 res.store_test_info()
                 res.write_info(test_id, self.fname(test_id))
-                return False
+                return eval_state(self.sh["conv"].events)
 
             index += 1
 
@@ -194,4 +197,4 @@ class Tester(object):
             store_test_state(self.sh, self.conv.events)
             res.store_test_info()
 
-        return True
+        return eval_state(self.sh["conv"].events)

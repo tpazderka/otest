@@ -12,6 +12,7 @@ from otest import CRYPTSUPPORT
 from otest import Done
 from otest import exception_trace
 from otest import tool
+from otest.check import CRITICAL
 from otest.check import ERROR
 from otest.check import OK
 from otest.check import State
@@ -59,7 +60,7 @@ class Tester(tool.Tester):
         self.conv.conf = conf
 
         if index >= len(self.conv.sequence):
-            return None
+            return CRITICAL
 
         res = Result(self.sh, self.kwargs['profile_handler'])
 
@@ -97,7 +98,7 @@ class Tester(tool.Tester):
                 res.store_test_info()
                 res.write_info(test_id)
                 store_test_state(self.sh, self.conv.events)
-                return self.inut.err_response("run_sequence", err)
+                return CRITICAL
             else:
                 rsp = self.handle_response(resp, index)
                 if rsp:
@@ -124,10 +125,7 @@ class Tester(tool.Tester):
         res.store_test_info()
         res.write_info(test_id)
 
-        if eval_state(self.conv.events) == OK:
-            return True
-        else:
-            return False
+        return eval_state(self.conv.events)
 
 
 class ClTester(Tester):

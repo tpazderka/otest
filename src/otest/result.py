@@ -3,7 +3,9 @@ import os
 
 from future.backports.urllib.parse import quote
 
+from otest.check import CRITICAL
 from otest.check import ERROR
+from otest.check import NOT_APPLICABLE
 from otest.check import OK
 from otest.check import WARNING
 from otest.check import INCOMPLETE
@@ -13,7 +15,9 @@ from otest.summation import trace_output
 from otest.summation import eval_state
 from otest.time_util import in_a_while
 
-SIGN = {OK: "+", WARNING: "!", ERROR: "-", INCOMPLETE: "?"}
+SIGN = {OK: "+", WARNING: "!", ERROR: "-", INCOMPLETE: "?",
+        NOT_APPLICABLE: 'N/A', CRITICAL: "X"}
+
 TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
                 INCOMPLETE: "INCOMPLETE"}
 
