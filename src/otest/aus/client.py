@@ -44,6 +44,8 @@ class Factory(object):
             args['verify_ssl'] = kw_args['verify_ssl']
         except KeyError:
             pass
+        else:
+            c_keyjar.verify_ssl = kw_args['verify_ssl']
 
         _cli = self.client_cls(**args)
 
