@@ -44,21 +44,24 @@ else:
 
 __author__ = 'roland'
 
-logger = logging.getLogger("")
-LOGFILE_NAME = 'tt.log'
-hdlr = logging.FileHandler(LOGFILE_NAME)
-base_formatter = logging.Formatter(
-    "%(asctime)s %(name)s:%(levelname)s %(message)s")
-
-hdlr.setFormatter(base_formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.DEBUG)
 
 ROOT = './'
 
 LOOKUP = TemplateLookup(directories=[ROOT + 'htdocs'],
                         module_directory=ROOT + 'modules',
                         input_encoding='utf-8', output_encoding='utf-8')
+
+logger = logging.getLogger("")
+
+
+def setup_logging(logfile_name, log_level=logging.DEBUG):
+    hdlr = logging.FileHandler(logfile_name)
+    base_formatter = logging.Formatter(
+        "%(asctime)s %(name)s:%(levelname)s %(message)s")
+
+    hdlr.setFormatter(base_formatter)
+    logger.addHandler(hdlr)
+    logger.setLevel(log_level)
 
 
 class JLog(object):
@@ -501,6 +504,11 @@ if __name__ == '__main__':
         '-x', dest='xport', help='ONLY for testing')
     parser.add_argument(dest="config")
     args = parser.parse_args()
+
+    if args.logfile:
+        setup_logging(args.logfile)
+    else:
+        setup_logging('tt.log')
 
     session_opts = {
         'session.type': 'memory',
