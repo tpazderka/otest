@@ -17,6 +17,7 @@ from future.backports.urllib.parse import parse_qs, urlparse
 from mako.lookup import TemplateLookup
 
 from oic import rndstr
+from oic.utils.http_util import BadRequest
 from oic.utils.http_util import extract_from_request
 from oic.utils.http_util import get_or_post
 from oic.utils.http_util import NotFound
@@ -300,6 +301,12 @@ class Application(object):
                     sh['test_conf'] = dict([(k, v[0]) for k, v in qs.items()])
                     # self.session_conf[sh['sid']] = sh
 
+                logger.info('test_conf: {}'.format(sh['test_conf']))
+
+                if 'start_page' not in sh['test_conf']:
+                    resp = BadRequest('You MUST provide a start_page')
+                    return resp(environ, start_response)
+
             if 'test_id' in qs:
                 (res, _path) = self.run_test(tester, qs['test_id'][0],
                                              sh['sid'], environ,
@@ -486,6 +493,7 @@ if __name__ == '__main__':
     parser.add_argument('-y', dest='yaml_flow', action='append',
                         help='Test descriptions in YAML format')
     parser.add_argument('-r', dest='rsa_key_dir', default='keys')
+    parser.add_argument('-l', dest='logfile')
     parser.add_argument(
         '-i', dest='internal', action='store_true',
         help='Whether the server should handle all communication internally')
