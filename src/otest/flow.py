@@ -186,3 +186,20 @@ class RPFlow(Flow):
         spec["sequence"] = seq
 
         return spec
+
+
+def match_usage(spec, **kwargs):
+    try:
+        _usage = spec['usage']
+    except KeyError:
+        return True
+    else:
+        for key, val in kwargs.items():
+            try:
+                allowed = _usage[key]
+            except KeyError:
+                continue
+            else:
+                if val not in allowed:
+                    return False
+    return True

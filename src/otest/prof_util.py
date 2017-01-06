@@ -12,7 +12,21 @@ REGISTER = 3
 CRYPTO = 4
 EXTRAS = 5
 
+LABEL = ['return_type', 'webfinger', 'discover', 'register', 'crypto',
+         'extra']
+
 __author__ = 'roland'
+
+
+def prof2usage(prof):
+    p = prof.split('.')
+    res = {}
+    for i in range(0, 6):
+        try:
+            res[LABEL[i]] = p[i]
+        except IndexError:
+            pass
+    return res
 
 
 class ProfileHandler(object):
