@@ -11,10 +11,58 @@ from otest.rp.setup import read_path2port_map
 from otest.utils import SERVER_LOG_FOLDER
 from otest.utils import setup_logging
 
+from otest.flow import Flow, RPFlow
+
 logger = logging.getLogger(__name__)
 
+RP_ORDER = [
+    "rp-discovery", "rp-registration", "rp-response_type",
+    "rp-response_mode", "rp-token_endpoint", "rp-id_token",
+    "rp-claims_request", "rp-request_uri", "rp-scope", "rp-nonce",
+    "rp-key-rotation", "rp-userinfo", "rp-self-issued", "rp-claims"]
 
-def construct_app_args(args, conf, operations, func, default_profiles, 
+OP_ORDER = [
+    "OP-Response",
+    "OP-IDToken",
+    "OP-UserInfo",
+    "OP-nonce",
+    "OP-scope",
+    "OP-display",
+    "OP-prompt",
+    "OP-Req",
+    "OP-OAuth",
+    "OP-redirect_uri",
+    "OP-ClientAuth",
+    "OP-Discovery",
+    "OP-Registration",
+    "OP-Rotation",
+    "OP-request_uri",
+    "OP-request",
+    "OP-claims"
+]
+
+DESC = {
+    "Response": "Response Type & Response Mode",
+    "IDToken": "ID Token",
+    "UserInfo": "Userinfo Endpoint",
+    "nonce": "nonce Request Parameter",
+    "scope": "scope Request Parameter",
+    "display": "display Request Parameter",
+    "prompt": "prompt Request Parameter",
+    "Req": "Misc Request Parameters",
+    "OAuth": "OAuth behaviors",
+    "redirect_uri": "redirect_uri",
+    "ClientAuth": "Client Authentication",
+    "Discovery": "Discovery",
+    "Registration": "Dynamic Client Registration",
+    "Rotation": "Key Rotation",
+    "request_uri": "request_uri Request Parameter",
+    "request": "request Request Parameter",
+    "claims": "claims Request Parameter"
+}
+
+
+def construct_app_args(args, conf, operations, func, default_profiles,
                        inst_conf):
     """
 
@@ -30,20 +78,15 @@ def construct_app_args(args, conf, operations, func, default_profiles,
 
     # setup_logging("%s/rp_%s.log" % (SERVER_LOG_FOLDER, _port), logger)
 
-    if args.flows:
-        _flows = args.flows
+    if args.flowdir:
+        _flowdir = args.flowdir
     else:
-        _flows = conf.FLOWS
+        _flowdir = conf.FLOWDIR
 
-    fdef = {'Flows': {}, 'Order': [], 'Desc': {}}
     cls_factories = {'': operations.factory}
     func_factory = func.factory
 
-    for flow_def in _flows:
-        spec = parse_yaml_conf(flow_def, cls_factories, func_factory)
-        fdef['Flows'].update(spec['Flows'])
-        fdef['Desc'].update(spec['Desc'])
-        fdef['Order'].extend(spec['Order'])
+    flows = RPFlow(_flowdir, cls_factories, func_factory)
 
     try:
         profiles = importlib.import_module(conf.PROFILES)
@@ -65,7 +108,7 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     _port = args.port
     if conf.BASE.endswith('/'):
         conf.BASE = conf.BASE[:-1]
-    
+
     if args.path2port:
         ppmap = read_path2port_map(args.path2port)
         try:
@@ -152,10 +195,10 @@ def construct_app_args(args, conf, operations, func, default_profiles,
 
     # Application arguments
     app_args = {
-        "flows": fdef['Flows'], "conf": conf, "base_url": _base,
-        "client_info": _client_info, "order": fdef['Order'],
+        "flows": flows, "conf": conf, "base_url": _base,
+        "client_info": _client_info, "order": OP_ORDER,
         "profiles": profiles, "operation": operations, "cache": {},
-        "profile": _profile, "lookup": LOOKUP, "desc": fdef['Desc'],
+        "profile": _profile, "lookup": LOOKUP, "desc": DESC,
         'tool_conf': inst_conf['tool']
     }
 

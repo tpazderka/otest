@@ -1,6 +1,8 @@
 import json
 import os
 import re
+
+import copy
 from otest import Unknown
 from otest.func import factory as ofactory
 
@@ -87,7 +89,7 @@ class Flow(object):
         for fn in os.listdir(self.fdir):
             if fn.endswith('.json'):
                 sfn = fn[:-5]
-                yield((sfn, self[sfn]))
+                yield ((sfn, self[sfn]))
 
     def keys(self):
         """
@@ -96,7 +98,7 @@ class Flow(object):
         """
         for fn in os.listdir(self.fdir):
             if fn.endswith('.json'):
-                yield(fn[:-5])
+                yield (fn[:-5])
 
     def pick(self, key, value):
         tids = []
@@ -109,6 +111,7 @@ class Flow(object):
                 if value == _val:
                     tids.append(tid)
         return tids
+
 
 # ==============================================================================
 
@@ -194,12 +197,42 @@ def match_usage(spec, **kwargs):
     except KeyError:
         return True
     else:
-        for key, val in kwargs.items():
+        for key, allowed in _usage.items():
             try:
-                allowed = _usage[key]
+                val = kwargs[key]
             except KeyError:
-                continue
+                return False
             else:
-                if val not in allowed:
+                if key == 'crypto':
+                    for skey, sval in allowed.items():
+                        if val[skey] != sval:
+                            return False
+                elif val not in allowed:
                     return False
     return True
+
+
+def get_return_type(prof):
+    return prof.split('.')[0]
+
+
+def get_category(usage):
+    if 'extra' in usage:
+        return '[Extra]'
+    if 'register' in usage:
+        return '[Dynamic]'
+    if 'discover' in usage:
+        return '[Config]'
+
+    if 'return_type' not in usage:
+        return '[Basic, Implicit, Hybrid]'
+    else:
+        li = []
+        _rt = usage['return_type']
+        if 'C' in _rt:
+            li.append('Basic')
+        if 'IT' in _rt or 'I' in _rt:
+            li.append('Implicit')
+        if 'CT' in _rt or 'CI' in _rt or 'CIT' in _rt:
+            li.append('Hybrid')
+        return '[' + ','.join(li) + ']'

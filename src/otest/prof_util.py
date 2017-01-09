@@ -22,10 +22,33 @@ def prof2usage(prof):
     p = prof.split('.')
     res = {}
     for i in range(0, 6):
+        if len(p) == i:
+            break
+
         try:
-            res[LABEL[i]] = p[i]
+            _val = p[i]
         except IndexError:
             pass
+        else:
+            if not _val:
+                continue
+
+            if i == RESPONSE:
+                _val = _val.split(',')
+            elif WEBFINGER <= i <= REGISTER:
+                pass
+            elif i == CRYPTO:
+                _v = {}
+                if 's' in _val:
+                    _v['sign'] = 'T'
+                if 'e' in _val:
+                    _v['enc'] = 'T'
+                if 'n' in _val:
+                    _v['none'] = 'T'
+                _val = _v
+            else:
+                _val = 'T'
+            res[LABEL[i]] = _val
     return res
 
 
