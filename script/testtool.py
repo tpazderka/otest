@@ -30,7 +30,6 @@ from otest.events import Events
 from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
 from otest.flow import FlowState
-from otest.parse_cnf import parse_yaml_conf
 from otest.session import SessionHandler
 from otest.rp.endpoints import static_mime
 from otest.rp.handling import WebIh
@@ -66,8 +65,8 @@ def setup_logging(logfile_name, log_level=logging.DEBUG):
 
 
 class JLog(object):
-    def __init__(self, logger, sid):
-        self.logger = logger
+    def __init__(self, log, sid):
+        self.logger = log
         self.id = sid
 
     def info(self, info):
@@ -96,14 +95,14 @@ class JLog(object):
         self.logger.warning(json.dumps(_dict))
 
 
-def css(environ, event_db):
-    try:
-        info = open(environ["PATH_INFO"]).read()
-        resp = Response(info)
-    except (OSError, IOError):
-        resp = NotFound(environ["PATH_INFO"])
-
-    return resp
+# def css(environ, event_db):
+#     try:
+#         info = open(environ["PATH_INFO"]).read()
+#         resp = Response(info)
+#     except (OSError, IOError):
+#         resp = NotFound(environ["PATH_INFO"])
+#
+#     return resp
 
 
 def start_page(environ, start_response, target):
@@ -178,7 +177,8 @@ class Application(object):
     def pick_grp(name):
         return name.split('-')[1]
 
-    def see_other_to_get(self, resp, sh):
+    @staticmethod
+    def see_other_to_get(resp, sh):
         loc = resp.message
         res = sh['conv'].entity.server.http_request(loc, 'GET')
         return res
@@ -236,7 +236,7 @@ class Application(object):
                     _path = loc[len(tester.base_url):]
                     if _path[0] == '/':
                         _path = _path[1:]
-                    return (0, _path)
+                    return 0, _path
                 else:
                     if self.internal:
                         _url = absolute_url(loc,
@@ -306,6 +306,8 @@ class Application(object):
                 if 'start_page' not in sh['test_conf']:
                     resp = BadRequest('You MUST provide a start_page')
                     return resp(environ, start_response)
+
+            info.profile = tester.sh.profile = qs['response_type']
 
             if 'test_id' in qs:
                 (res, _path) = self.run_test(tester, qs['test_id'][0],
@@ -399,7 +401,7 @@ class Application(object):
                 # The only redirect should be the one to the redirect_uri
                 if isinstance(resp, SeeOther):
                     if self.internal:
-                        res = self.see_other_to_get(resp, sh)
+                        # res = self.see_other_to_get(resp, sh)
                         # res is probably a redirect
                         # send the user back to the test list page
                         return info.flow_list()
@@ -488,7 +490,6 @@ if __name__ == '__main__':
         help='If running behind a proxy this is the external name of the host')
     parser.add_argument('-s', dest='tls', action='store_true',
                         help='Whether the server should handle SSL/TLS')
-    parser.add_argument('-p', dest="profile", help='The RP profile')
     parser.add_argument(
         '-f', dest='flowdir',
         help='Directory where test descriptions in JSON format can be found')
@@ -552,7 +553,7 @@ if __name__ == '__main__':
     _op_profiles = json.load(open(args.op_profiles))
 
     kwargs = {"base_url": as_args['name'], 'flows': flows,
-              'order': ["Code", "Token"], "profile": args.profile,
+              'order': ["Code", "Token"],
               "msg_factory": tool_args['cls_factories'],
               "check_factory": tool_args['chk_factory'], 'conf': config,
               "cache": {}, 'op_profiles': _op_profiles,

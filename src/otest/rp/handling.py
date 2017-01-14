@@ -21,7 +21,7 @@ def get_test_info(session, test_id):
 
 
 class WebIh(InfoHandling):
-    def __init__(self, conf, flows, profile_handler, profile, lookup,
+    def __init__(self, conf, flows, profile_handler, profile='', lookup=None,
                  cache=None, environ=None, start_response=None, session=None,
                  **kwargs):
         InfoHandling.__init__(self, flows, profile, profile_handler,
