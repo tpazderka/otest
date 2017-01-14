@@ -271,7 +271,7 @@ class Application(object):
             sh = session['session_info']
         except KeyError:
             sh = SessionHandler(**self.kwargs)
-            sh.session_init()
+            #sh.session_init()
             session['session_info'] = sh
 
         info = WebIh(session=sh, **self.kwargs)
@@ -300,6 +300,8 @@ class Application(object):
                 if qs:
                     sh['test_conf'] = dict([(k, v[0]) for k, v in qs.items()])
                     # self.session_conf[sh['sid']] = sh
+                else:
+                    return self.init_session(tester, sh)
 
                 logger.info('test_conf: {}'.format(sh['test_conf']))
 
@@ -307,7 +309,8 @@ class Application(object):
                     resp = BadRequest('You MUST provide a start_page')
                     return resp(environ, start_response)
 
-            info.profile = tester.sh.profile = qs['response_type']
+            info.profile = tester.sh.profile = qs['response_type'][0]
+            sh.session_init()
 
             if 'test_id' in qs:
                 (res, _path) = self.run_test(tester, qs['test_id'][0],

@@ -34,7 +34,7 @@ class ConfigurationError(Exception):
 
 
 class Tester(object):
-    def __init__(self, inut, sh, profile, flows=None, check_factory=None,
+    def __init__(self, inut, sh, profile='', flows=None, check_factory=None,
                  msg_factory=None, cache=None, make_entity=None, map_prof=None,
                  com_handler=None, response_cls=None,
                  client_factory=None, **kwargs):

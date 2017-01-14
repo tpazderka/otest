@@ -48,7 +48,7 @@ class WebTester(tool.Tester):
     def match_profile(self, test_id, **kwargs):
         _spec = self.flows[test_id]
         # There must be an intersection between the two profile lists.
-        if self.profile in _spec["usage"]["return_type"]:
+        if self.sh.profile in _spec["usage"]["return_type"]:
             return True
         else:
             return False
