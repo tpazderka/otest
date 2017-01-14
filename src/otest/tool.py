@@ -10,8 +10,6 @@ from otest.check import State
 from otest.conversation import Conversation
 from otest.events import EV_CONDITION, EV_FAULT
 from otest.result import Result
-from otest.summation import eval_state
-from otest.summation import store_test_state
 from otest.verify import Verify
 
 __author__ = 'roland'
@@ -87,6 +85,7 @@ class Tester(object):
             return self.run_flow(test_id, conf=kw_args['conf'])
         except Exception as err:
             exception_trace("", err, logger)
+            self.store_result()
             return self.inut.err_response("run", err)
 
     def handle_response(self, resp, index, oper=None):
@@ -101,13 +100,17 @@ class Tester(object):
         except AttributeError:
             return resp.text
 
+    def store_result(self, res=None):
+        tinfo = self.flows.store_test_info(self)
+        if res is None:
+            res = Result(self.sh, self.kwargs['profile_handler'])
+        res.write_info(tinfo)
+        return tinfo
+
     def run_flow(self, test_id, index=0, profiles=None, **kwargs):
         logger.info("<=<=<=<=< %s >=>=>=>=>" % test_id)
         _ss = self.sh
-        try:
-            _ss["node"].complete = False
-        except KeyError:
-            pass
+        _ss.test_flows.complete[test_id] = False
 
         self.conv.test_id = test_id
         res = Result(self.sh, self.kwargs['profile_handler'])
@@ -138,17 +141,13 @@ class Tester(object):
                 _oper.setup(profile_map)
                 resp = _oper()
             except ConditionError:
-                store_test_state(self.sh, self.conv.events)
-                res.store_test_info()
-                res.write_info(test_id, self.fname(test_id))
+                self.store_result(res)
                 return ERROR
             except Exception as err:
                 exception_trace('run_flow', err)
                 self.conv.events.store(EV_FAULT, err)
                 #self.sh["index"] = index
-                store_test_state(self.sh, self.conv.events)
-                res.store_test_info()
-                res.write_info(test_id, self.fname(test_id))
+                self.store_result(res)
                 return CRITICAL
             else:
                 if isinstance(resp, self.response_cls):
@@ -168,10 +167,8 @@ class Tester(object):
             try:
                 _oper.post_tests()
             except ConditionError:
-                store_test_state(self.sh, self.conv.events)
-                res.store_test_info()
-                res.write_info(test_id, self.fname(test_id))
-                return eval_state(self.sh["conv"].events)
+                tinfo = self.store_result(res)
+                return tinfo['state']
 
             index += 1
 
@@ -190,11 +187,7 @@ class Tester(object):
         if isinstance(_oper, Done):
             self.conv.events.store(EV_CONDITION, State('Done', OK),
                                    sender='run_flow')
-            store_test_state(self.sh, self.conv.events)
-            res.store_test_info()
-            res.write_info(test_id, self.fname(test_id))
-        else:
-            store_test_state(self.sh, self.conv.events)
-            res.store_test_info()
 
-        return eval_state(self.sh["conv"].events)
+        tinfo = self.store_result(res)
+
+        return tinfo['state']

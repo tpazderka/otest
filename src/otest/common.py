@@ -43,10 +43,6 @@ def make_entity(**kw_args):
     raise NotImplemented()
 
 
-def node_dict(flows, lst):
-    return dict([(l, flows[l]) for l in lst])
-
-
 def run_flow(profiles, conv, test_id, conf, profile, chk_factory, index=0):
     print(("==" + test_id))
     conv.test_id = test_id

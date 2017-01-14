@@ -247,30 +247,6 @@ def exception_trace(tag, exc, log=None):
                 tag, exc.message.encode("utf-8", "replace")), file=sys.stderr)
 
 
-class Node(object):
-    def __init__(self, name, desc="", rmc=False, experr=False,
-            tests=None, **kwargs):
-        self.name = name
-        self.desc = desc
-        self.state = 0
-        self.rmc = rmc
-        self.experr = experr
-        self.tests = tests or {}
-        self.kwargs = kwargs
-
-
-def make_node(x, spec):
-    return Node(x, **spec)
-
-
-def get_node(tests, nid):
-    l = [x for x in tests if x.name == nid]
-    try:
-        return l[0]
-    except (ValueError, IndexError):
-        return None
-
-
 class ContextFilter(logging.Filter):
     """
     This is a filter which injects time laps information into the log.

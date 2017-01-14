@@ -14,8 +14,6 @@ from otest.check import INCOMPLETE
 from otest.handling import InfoHandling
 from otest.log import with_or_without_slash
 from otest.summation import represent_result
-from otest.summation import store_test_state
-from otest.utils import get_test_info
 
 __author__ = 'roland'
 
@@ -26,11 +24,12 @@ TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
 
 
 class WebIh(InfoHandling):
-    def __init__(self, conf, flows, desc, profile_handler, profile, lookup,
-                 cache=None, environ=None, start_response=None, session=None,
-                 base_url='', **kwargs):
-        InfoHandling.__init__(self, flows, profile, desc, profile_handler,
-                              cache, session=session, **kwargs)
+    def __init__(self, conf=None, flows=None, profile_handler=None, profile='',
+                 lookup=None, cache=None, environ=None, start_response=None,
+                 session=None, base_url='', **kwargs):
+        InfoHandling.__init__(self, flows=flows, profile=profile,
+                              profile_handler=profile_handler,
+                              cache=cache, session=session, **kwargs)
 
         self.conf = conf
         self.lookup = lookup
@@ -48,12 +47,10 @@ class WebIh(InfoHandling):
             raise
 
         argv = {
-            "flows": self.session["tests"],
+            "flows": self.flows.display_info(self.session['tests']),
             "profile": self.session["profile"],
-            "test_info": list(self.session["test_info"].keys()),
+            #"test_info": list(self.session["test_info"].keys()),
             "base": self.base_url,
-            "headlines": self.desc,
-            "testresults": TEST_RESULTS,
         }
 
         return resp(self.environ, self.start_response, **argv)
@@ -70,7 +67,7 @@ class WebIh(InfoHandling):
                         template_lookup=self.lookup,
                         headers=[])
 
-        info = get_test_info(self.session, testid)
+        info = self.flows.test_info[testid]
 
         argv = {
             "profile": info["profile_info"],
@@ -186,7 +183,7 @@ class WebIh(InfoHandling):
                 return resp(self.environ, self.start_response)
 
     def err_response(self, where, err):
-        self._err_response(where, err)
+        self._store_error(where, err)
         return self.flow_list()
 
     def sorry_response(self, homepage, err):
@@ -201,7 +198,6 @@ class WebIh(InfoHandling):
         return resp(self.environ, self.start_response, **argv)
 
     def opresult(self, conv):
-        store_test_state(conv.events, self.session)
         return self.flow_list()
 
     def opresult_fragment(self):

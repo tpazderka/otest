@@ -7,11 +7,12 @@ from mako.lookup import TemplateLookup
 from oic.utils.keyio import build_keyjar
 
 from otest.parse_cnf import parse_yaml_conf
+from otest.prof_util import ProfileHandler
 from otest.rp.setup import read_path2port_map
 from otest.utils import SERVER_LOG_FOLDER
 from otest.utils import setup_logging
 
-from otest.flow import Flow, RPFlow
+from otest.flow import Flow, RPFlow, FlowState
 
 logger = logging.getLogger(__name__)
 
@@ -21,45 +22,45 @@ RP_ORDER = [
     "rp-claims_request", "rp-request_uri", "rp-scope", "rp-nonce",
     "rp-key-rotation", "rp-userinfo", "rp-self-issued", "rp-claims"]
 
-OP_ORDER = [
-    "OP-Response",
-    "OP-IDToken",
-    "OP-UserInfo",
-    "OP-nonce",
-    "OP-scope",
-    "OP-display",
-    "OP-prompt",
-    "OP-Req",
-    "OP-OAuth",
-    "OP-redirect_uri",
-    "OP-ClientAuth",
-    "OP-Discovery",
-    "OP-Registration",
-    "OP-Rotation",
-    "OP-request_uri",
-    "OP-request",
-    "OP-claims"
-]
+# OP_ORDER = [
+#     "OP-Response",
+#     "OP-IDToken",
+#     "OP-UserInfo",
+#     "OP-nonce",
+#     "OP-scope",
+#     "OP-display",
+#     "OP-prompt",
+#     "OP-Req",
+#     "OP-OAuth",
+#     "OP-redirect_uri",
+#     "OP-ClientAuth",
+#     "OP-Discovery",
+#     "OP-Registration",
+#     "OP-Rotation",
+#     "OP-request_uri",
+#     "OP-request",
+#     "OP-claims"
+# ]
 
-DESC = {
-    "Response": "Response Type & Response Mode",
-    "IDToken": "ID Token",
-    "UserInfo": "Userinfo Endpoint",
-    "nonce": "nonce Request Parameter",
-    "scope": "scope Request Parameter",
-    "display": "display Request Parameter",
-    "prompt": "prompt Request Parameter",
-    "Req": "Misc Request Parameters",
-    "OAuth": "OAuth behaviors",
-    "redirect_uri": "redirect_uri",
-    "ClientAuth": "Client Authentication",
-    "Discovery": "Discovery",
-    "Registration": "Dynamic Client Registration",
-    "Rotation": "Key Rotation",
-    "request_uri": "request_uri Request Parameter",
-    "request": "request Request Parameter",
-    "claims": "claims Request Parameter"
-}
+OP_ORDER = [
+    "Response Type & Response Mode",
+    "ID Token",
+    "Userinfo Endpoint",
+    "nonce Request Parameter",
+    "scope Request Parameter",
+    "display Request Parameter",
+    "prompt Request Parameter",
+    "Misc Request Parameters",
+    "OAuth behaviors",
+    "redirect_uri",
+    "Client Authentication",
+    "Discovery",
+    "Dynamic Client Registration",
+    "Key Rotation",
+    "request_uri Request Parameter",
+    "request Request Parameter",
+    "claims Request Parameter"
+]
 
 
 def construct_app_args(args, conf, operations, func, default_profiles,
@@ -86,12 +87,15 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     cls_factories = {'': operations.factory}
     func_factory = func.factory
 
-    flows = RPFlow(_flowdir, cls_factories, func_factory)
-
     try:
         profiles = importlib.import_module(conf.PROFILES)
     except AttributeError:
         profiles = default_profiles
+
+    flows = FlowState(_flowdir, profile_handler=ProfileHandler,
+                      cls_factories=cls_factories,
+                      func_factory=func_factory,
+                      display_order=OP_ORDER)
 
     # Add own keys for signing/encrypting JWTs
     jwks, keyjar, kidd = build_keyjar(conf.KEYS)
@@ -196,10 +200,10 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     # Application arguments
     app_args = {
         "flows": flows, "conf": conf, "base_url": _base,
-        "client_info": _client_info, "order": OP_ORDER,
-        "profiles": profiles, "operation": operations, "cache": {},
-        "profile": _profile, "lookup": LOOKUP, "desc": DESC,
-        'tool_conf': inst_conf['tool']
+        "client_info": _client_info,  "profiles": profiles,
+        "operation": operations, "cache": {}, "profile": _profile,
+        "lookup": LOOKUP, 'tool_conf': inst_conf['tool'],
+        "profile_handler": ProfileHandler
     }
 
     return _path, app_args

@@ -67,12 +67,7 @@ def get_errors(events):
     return '. '.join(res)
 
 
-def represent_result(events):
-    """
-    A textual representation of the status of the test result
-    :param events: An otest.events.Events instance
-    :return: A text string
-    """
+def result_code(events):
     _state = eval_state(events)
     if not completed(events):
         tag = "PARTIAL RESULT"
@@ -83,6 +78,18 @@ def represent_result(events):
             tag = "PARTIAL RESULT"
         else:
             tag = STATUSCODE[_state]
+
+    return tag
+
+
+def represent_result(events):
+    """
+    A textual representation of the status of the test result
+    :param events: An otest.events.Events instance
+    :return: A text string
+    """
+
+    tag = result_code(events)
 
     info = []
     for state in events.get_data(EV_CONDITION):
@@ -96,17 +103,6 @@ def represent_result(events):
         text = tag
 
     return text
-
-
-def store_test_state(session, events):
-    _node = session['node']
-    _node.complete = completed(events)
-
-    _state = eval_state(events)
-    if _node.complete:
-        _node.state = _state
-
-    return _state
 
 
 # -----------------------------------------------------------------------------
@@ -130,13 +126,13 @@ def condition(events, html=False):
 
     """
     if html:
-        element = ["<h3>Conditions</h3>", "<pre><code>"]
+        element = ['<div class="condition">',"<h3>Conditions</h3>", "<pre><code>"]
     else:
         element = ["Conditions\n"]
     for cond in events.get_data(EV_CONDITION):
         element.append('{}'.format(cond))
     if html:
-        element.append("</code></pre>")
+        element.append("</code></pre></div>")
         return "\n".join(element)
     else:
         element.append("\n")

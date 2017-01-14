@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class InfoHandling(object):
-    def __init__(self, flows, profile, desc='', profile_handler=None,
+    def __init__(self, flows, profile, desc=None, profile_handler=None,
                  cache=None, session=None, **kwargs):
         self.flows = flows
         self.cache = cache
@@ -27,25 +27,18 @@ class InfoHandling(object):
     def represent_result(self, events):
         return represent_result(events)
 
-    def _err_response(self, where, err):
+    def _store_error(self, where, err):
         if err:
             exception_trace(where, err, logger)
 
-        try:
-            res = Result(self.session, self.profile_handler)
-            res.write_info(self.session["testid"])
-            res.store_test_info()
-        except KeyError:
-            pass
-
     def err_response(self, where, err):
-        self._err_response(where, err)
+        self._store_error(where, err)
 
-    @staticmethod
-    def get_err_type(session):
+    def get_err_type(self, test_id):
         errt = WARNING
         try:
-            if session["node"].mti == {"all": "MUST"}:
+            if self.session['profile'].split('.')[0] in self.flows[test_id][
+                    'MTI']:
                 errt = ERROR
         except KeyError:
             pass
@@ -54,15 +47,6 @@ class InfoHandling(object):
     def log_fault(self, session, err, where, err_type=0):
         if err_type == 0:
             err_type = self.get_err_type(session)
-
-        if "node" in session:
-            if err:
-                if isinstance(err, Break):
-                    session["node"].state = WARNING
-                else:
-                    session["node"].state = err_type
-            else:
-                session["node"].state = err_type
 
         if "conv" in session:
             if err:

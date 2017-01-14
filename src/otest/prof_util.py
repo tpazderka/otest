@@ -90,10 +90,11 @@ class ProfileHandler(object):
                 except KeyError:
                     return {}
 
-            return {"Issuer": iss, "Profile": profile,
-                    "Test ID": test_id,
-                    "Test description": self.session["node"].desc,
-                    "Timestamp": in_a_while()}
+            return {
+                "Issuer": iss, "Profile": profile,
+                "Test ID": test_id,
+                "Test description": self.session.test_flows[test_id]["desc"],
+                "Timestamp": in_a_while()}
 
         return {}
 
@@ -163,10 +164,11 @@ class SimpleProfileHandler(ProfileHandler):
                 except KeyError:
                     return {}
 
-            return {"Issuer": iss, "Profile": profile,
-                    "Test ID": test_id,
-                    "Test description": self.session["node"].desc,
-                    "Timestamp": in_a_while()}
+            return {
+                "Issuer": iss, "Profile": profile,
+                "Test ID": test_id,
+                "Test description": self.session.test_flows[test_id]["desc"],
+                "Timestamp": in_a_while()}
         return {}
 
     def log_path(self, **kwargs):

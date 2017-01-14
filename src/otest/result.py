@@ -2,6 +2,7 @@ import logging
 import os
 
 from future.backports.urllib.parse import quote
+from oic.oauth2.provider import Provider
 
 from otest.check import CRITICAL
 from otest.check import ERROR
@@ -11,8 +12,8 @@ from otest.check import WARNING
 from otest.check import INCOMPLETE
 from otest.summation import condition
 from otest.summation import represent_result
+from otest.summation import result_code
 from otest.summation import trace_output
-from otest.summation import eval_state
 from otest.time_util import in_a_while
 
 SIGN = {OK: "+", WARNING: "!", ERROR: "-", INCOMPLETE: "?",
@@ -31,7 +32,7 @@ def get_issuer(conv):
         try:
             # From provider info discovery, dynamic or static
             return conv.entity.provider_info['issuer']
-        except KeyError:
+        except (KeyError, AttributeError):
             try:
                 # Initial configuration
                 return conv.tool_config['issuer']
@@ -41,13 +42,13 @@ def get_issuer(conv):
 
 def safe_url(url):
     if url.startswith('https://'):
-        url = 's_'+url[8:]
+        url = 's_' + url[8:]
     elif url.startswith('http://'):
         url = url[7:]
 
     s = quote(url)
     s = s.replace('/', '%2F')
-    s = s.replace('%','')
+    s = s.replace('%', '')
     s = s.replace('//', '/')
     return s
 
@@ -71,34 +72,46 @@ def safe_path(eid, *args):
 
 
 class Result(object):
+    """
+    Reads and writes test result information to files on disc.
+    Keeps a cache for quick access.
+    """
+
     def __init__(self, session, profile_handler):
         self.profile_handler = profile_handler
         self.session = session
+        self.cache = {}
 
-    def result(self):
-        _state = eval_state(self.session["conv"].events)
-        print("{} {}".format(SIGN[_state], self.session["node"].name))
+    # def result(self, tid):
+    #     _state = eval_state(self.session["conv"].events)
+    #     print("{} {}".format(SIGN[_state], self.session.flows[tid]['desc']))
 
     def print_result(self, events):
         return represent_result(events)
 
-    def _profile_info(self, test_id):
-        if self.profile_handler:
-            ph = self.profile_handler(self.session)
-            try:
-                return ph.get_profile_info(test_id)
-            except Exception as err:
-                raise
-        return {}
+    def op_based(self, test_id, tag=''):
+        _sess = self.session
+        _iss = get_issuer(_sess['conv'])
+        if _iss.endswith('/' + test_id):
+            _iss = _iss[:-(len(test_id) + 1)]
+        if not tag:
+            tag = _sess['conv'].tool_config['tag']
+        return safe_path(_iss, tag, _sess['profile'], _sess['testid'])
 
-    def write_info(self, test_id, file_name=None, tag=''):
+    def rp_based(self, test_id, tag=''):
+        _sess = self.session
+        return safe_path(_sess['test_conf']['start_page'],
+                         _sess['profile'], _sess['testid'])
+
+    def write_info(self, tinfo, test_id='', file_name=None, tag=''):
+        if not test_id:
+            test_id = tinfo['test_id']
+
         if file_name is None:
-            _iss = get_issuer(self.session['conv'])
-            if _iss.endswith('/'+test_id):
-                _iss = _iss[:-(len(test_id)+1)]
-            if not tag:
-                tag = self.session['conv'].tool_config['tag']
-            file_name = safe_path(_iss, tag, self.session['testid'])
+            if isinstance(self.session['conv'].entity, Provider):
+                file_name = self.rp_based(tinfo, tag)
+            else:
+                file_name = self.op_based(tinfo, tag)
 
         if 'conv' not in self.session:
             return
@@ -107,7 +120,7 @@ class Result(object):
 
         sline = 60 * "="
 
-        _pi = self._profile_info(test_id)
+        _pi = tinfo['profile_info']
 
         if _pi:
             _keys = list(_pi.keys())
@@ -117,14 +130,14 @@ class Result(object):
             output = ['Test ID: {}'.format(_conv.test_id),
                       "Timestamp: {}".format(in_a_while())]
 
+        _events = tinfo["events"]
         output.extend(["", sline, ""])
-        output.extend(trace_output(_conv.events))
+        output.extend(trace_output(_events))
         output.extend(["", sline, ""])
-        output.extend(condition(_conv.events))
+        output.extend(condition(_events))
         output.extend(["", sline, ""])
         # and lastly the result
-        output.append(
-            "RESULT: {}".format(self.print_result(_conv.events)))
+        output.append("RESULT: {}".format(self.print_result(_events)))
         output.append("")
 
         txt = "\n".join(output)
@@ -133,30 +146,8 @@ class Result(object):
         f.write(txt)
         f.close()
 
-    def _test_info(self, profile_info=None):
-        _info = {
-            "descr": self.session["node"].desc,
-            "events": self.session["conv"].events,
-            "index": self.session["index"],
-            # "seqlen": len(self.session["seq_info"]["sequence"]),
-            "test_output": self.session["conv"].events.get('condition'),
-        }
-
-        try:
-            _info["node"] = self.session["seq_info"]["node"]
-        except KeyError:
-            pass
-
-        if profile_info:
-            _info["profile_info"] = profile_info
-        else:
-            _info['profile_info'] = self._profile_info(self.session["testid"])
-
-        return _info
-
-    def store_test_info(self, profile_info=None):
-        self.session["test_info"][self.session["testid"]] = self._test_info(
-            profile_info)
+        self.cache[test_id] = {'result': result_code(_events),
+                               'file_name': file_name}
 
     def _open_file(self, file_name, mode='w'):
         try:
@@ -176,14 +167,5 @@ class Result(object):
                 raise
         return fp
 
-    def dump_log(self):
-        file_name = safe_path(self.session['conv'].conf.ISSUER,
-                              self.session['profile'], self.session['testid'])
-
-        _info = self._test_info()
-
-        fp = self._open_file(file_name)
-
-        fp.write("{0}".format(_info))
-        fp.write("\n\n")
-        fp.close()
+    def test_status(self, tid):
+        return self.cache[tid]

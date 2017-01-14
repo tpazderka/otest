@@ -29,6 +29,7 @@ from oic.utils import http_util
 from otest.events import Events
 from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
+from otest.flow import FlowState
 from otest.parse_cnf import parse_yaml_conf
 from otest.session import SessionHandler
 from otest.rp.endpoints import static_mime
@@ -44,7 +45,6 @@ else:
     urllib3.disable_warnings()
 
 __author__ = 'roland'
-
 
 ROOT = './'
 
@@ -488,10 +488,10 @@ if __name__ == '__main__':
         help='If running behind a proxy this is the external name of the host')
     parser.add_argument('-s', dest='tls', action='store_true',
                         help='Whether the server should handle SSL/TLS')
-    parser.add_argument('-p', dest="profile", action='append',
-                        help='The RP profile')
-    parser.add_argument('-y', dest='yaml_flow', action='append',
-                        help='Test descriptions in YAML format')
+    parser.add_argument('-p', dest="profile", help='The RP profile')
+    parser.add_argument(
+        '-f', dest='flowdir',
+        help='Directory where test descriptions in JSON format can be found')
     parser.add_argument('-r', dest='rsa_key_dir', default='keys')
     parser.add_argument('-l', dest='logfile')
     parser.add_argument(
@@ -530,24 +530,9 @@ if __name__ == '__main__':
     config = importlib.import_module(args.config)
     tool_args = config.TOOL_ARGS
 
-    fdef = {'Flows': {}, 'Order': [], 'Desc': {}}
-    for flow_def in args.yaml_flow:
-        spec = parse_yaml_conf(flow_def, tool_args['cls_factories'],
-                               tool_args['func_factory'])
-        fdef['Flows'].update(spec['Flows'])
-        fdef['Desc'].update(spec['Desc'])
-        fdef['Order'].extend(spec['Order'])
-
-    # Filter based on profile
-    keep = []
-    for key, val in fdef['Flows'].items():
-        for p in args.profile:
-            if p in val['profile']:
-                keep.append(key)
-
-    for key in list(fdef['Flows'].keys()):
-        if key not in keep:
-            del fdef['Flows'][key]
+    flows = FlowState(args.flowdir, tool_args['profile_handler'],
+                      tool_args['cls_factories'], tool_args['func_factory'],
+                      display_order=['Code', 'Token'])
 
     # Create necessary keys if I don't already have them
     keys = key_handling('keys')
@@ -566,9 +551,8 @@ if __name__ == '__main__':
 
     _op_profiles = json.load(open(args.op_profiles))
 
-    kwargs = {"base_url": as_args['name'], "test_specs": fdef,
-              'flows': fdef['Flows'], 'order': fdef['Order'],
-              "profile": args.profile, 'desc': fdef['Desc'],
+    kwargs = {"base_url": as_args['name'], 'flows': flows,
+              'order': ["Code", "Token"], "profile": args.profile,
               "msg_factory": tool_args['cls_factories'],
               "check_factory": tool_args['chk_factory'], 'conf': config,
               "cache": {}, 'op_profiles': _op_profiles,

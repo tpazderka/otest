@@ -3,8 +3,10 @@ import os
 import re
 
 import copy
-from otest import Unknown
+from otest import Unknown, Done
 from otest.func import factory as ofactory
+from otest.prof_util import prof2usage
+from otest.summation import eval_state, completed, represent_result
 
 PAT = re.compile('\${([A-Z_0-9]*)}')
 
@@ -56,8 +58,9 @@ def replace_with_link(txt, links):
 
 
 class Flow(object):
-    def __init__(self, fdir):
+    def __init__(self, fdir, profile_handler):
         self.fdir = fdir
+        self.profile_handler = profile_handler
 
     def __getitem__(self, tid):
         """
@@ -101,6 +104,13 @@ class Flow(object):
                 yield (fn[:-5])
 
     def pick(self, key, value):
+        """
+        Pick a number of test descriptions base on a key,value pair.
+
+        :param key:
+        :param value:
+        :return:
+        """
         tids = []
         for tid, spec in self.items():
             try:
@@ -111,6 +121,45 @@ class Flow(object):
                 if value == _val:
                     tids.append(tid)
         return tids
+
+    def matches_profile(self, profile):
+        """
+        Return a list of test IDs how all match the profile
+        :param profile:
+        :return:
+        """
+
+        _tids = []
+        _use = prof2usage(profile)
+        _use['return_type'] = _use['return_type'][0]
+        for tid, spec in self.items():
+            if match_usage(spec, **_use):
+                _tids.append(tid)
+        return _tids
+
+    def mandatory_to_implement(self, tid, profile):
+        _use = prof2usage(profile)
+        _use['return_type'] = _use['return_type'][0]
+        spec = self[tid]
+        try:
+            _mti = spec["MTI"]
+        except KeyError:
+            pass
+        else:
+            if _use['return_type'][0] in _mti:
+                if _use['register'] and 'DYN' in _mti:
+                    if _use['discover'] and 'CNF' in _mti:
+                        return True
+        return False
+
+    def _profile_info(self, test_id, session):
+        if self.profile_handler:
+            ph = self.profile_handler(session)
+            try:
+                return ph.get_profile_info(test_id)
+            except Exception as err:
+                raise
+        return {}
 
 
 # ==============================================================================
@@ -155,8 +204,9 @@ def _get_func(dic, func_factory):
 
 
 class RPFlow(Flow):
-    def __init__(self, fdir, cls_factories, func_factory, use=''):
-        Flow.__init__(self, fdir)
+    def __init__(self, fdir, profile_handler, cls_factories, func_factory,
+                 use=''):
+        Flow.__init__(self, fdir, profile_handler)
         self.cls_factories = cls_factories
         self.func_factory = func_factory
         self.use = use
@@ -186,6 +236,7 @@ class RPFlow(Flow):
                 except Exception:
                     print('tid:{}'.format(tid))
                     raise
+        seq.append(Done)
         spec["sequence"] = seq
 
         return spec
@@ -213,7 +264,10 @@ def match_usage(spec, **kwargs):
 
 
 def get_return_type(prof):
-    return prof.split('.')[0]
+    try:
+        return prof.split('.')[0]
+    except AttributeError:
+        return prof[0]
 
 
 def get_category(usage):
@@ -236,3 +290,73 @@ def get_category(usage):
         if 'CT' in _rt or 'CI' in _rt or 'CIT' in _rt:
             li.append('Hybrid')
         return '[' + ','.join(li) + ']'
+
+
+class FlowState(RPFlow):
+    def __init__(self, fdir, profile_handler, cls_factories, func_factory,
+                 display_order, use=''):
+        RPFlow.__init__(self, fdir, profile_handler, cls_factories,
+                        func_factory, use=use)
+        self.test_info = {}
+        self.display_order = display_order
+        self.complete = {}
+
+    def store_test_info(self, tester):
+        _conv = tester.conv
+        tinfo = self._test_info(_conv.test_id, _conv.events, _conv.index,
+                                tester.sh)
+        self.test_info[_conv.test_id] = tinfo
+        return tinfo
+
+    def _test_info(self, test_id, events, index, session):
+        _info = {
+            'test_id': test_id,
+            "descr": self[test_id]["desc"],
+            "events": events,
+            "index": index,
+            "test_output": events.get('condition'),
+            "state": eval_state(events),
+            "complete": completed(events),
+            "result": represent_result(events)
+        }
+
+        if _info['complete']:
+            self.complete[test_id] = True
+
+        _info['profile_info'] = self._profile_info(test_id, session)
+
+        return _info
+
+    def display_info(self, tids):
+        """
+        Return information to be used in UIX display
+        :param tids: List of TestIDs
+        :return:
+        """
+
+        interim = {}
+        for tid in tids:
+            _spec = self[tid]
+            try:
+                _state = self.test_info[tid]['state']
+            except KeyError:
+                _state = 0
+
+            try:
+                interim[_spec['group']].append((_state, _spec['desc'], tid))
+            except KeyError:
+                interim[_spec['group']] = [(_state, _spec['desc'], tid)]
+
+        res = []
+        for grp in self.display_order:
+            try:
+                _s = sorted(interim[grp], key=lambda x: x[2])
+            except KeyError:
+                continue
+            else:
+                for x in _s:
+                    y = [grp]
+                    y.extend(x)
+                    res.append(y)
+        return res
+

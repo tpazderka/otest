@@ -121,13 +121,13 @@ class WebApplication(object):
                                      self.pick_grp(sh['conv'].test_id)))
             return resp(environ, start_response)
         # expected _path format: /<testid>[/<endpoint>]
-        elif _path in sh["flow_names"]:
+        elif _path in sh["tests"]:
             resp = tester.run(_path, **self.webenv)
             session['session_info'] = info.session
 
             if resp is False or resp is True:
                 pass
-            elif resp:
+            elif isinstance(resp, list):
                 return resp
 
             try:
@@ -181,7 +181,7 @@ class WebApplication(object):
             else:
                 if resp is False or resp is True:
                     pass
-                elif resp:
+                elif not isinstance(resp, int):
                     return resp
 
                 try:

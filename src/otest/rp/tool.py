@@ -23,7 +23,6 @@ from otest.events import EV_REQUEST
 from otest.events import EV_RESPONSE
 from otest.result import Result
 from otest.result import safe_path
-from otest.summation import store_test_state
 from otest.verify import Verify
 
 logger = logging.getLogger(__name__)
@@ -49,7 +48,7 @@ class WebTester(tool.Tester):
     def match_profile(self, test_id, **kwargs):
         _spec = self.flows[test_id]
         # There must be an intersection between the two profile lists.
-        if set(self.profile).intersection(set(_spec["profile"])):
+        if self.profile in _spec["usage"]["return_type"]:
             return True
         else:
             return False
@@ -100,9 +99,7 @@ class WebTester(tool.Tester):
             pass
 
         self.conv.events.store(EV_CONDITION, State('Done', OK))
-        store_test_state(self.sh, self.conv.events)
-        res.store_test_info()
-        res.write_info(test_id, self.fname(test_id))
+        self.store_result(res)
 
     def get_cls_and_func(self, index):
         item = self.conv.sequence[index]
@@ -120,7 +117,7 @@ class WebTester(tool.Tester):
 
         _ss = self.sh
         try:
-            _ss["node"].complete = False
+            _ss.test_flows.complete[test_id] = False
         except KeyError:
             pass
 
@@ -156,9 +153,7 @@ class WebTester(tool.Tester):
             _oper.setup(profile_map)
             resp = _oper()
         except ConditionError:
-            store_test_state(self.sh, self.conv.events)
-            res.store_test_info()
-            res.write_info(test_id, self.fname(test_id))
+            self.store_result(res)
             return False
         except Exception as err:
             exception_trace('run_flow', err)
@@ -180,9 +175,7 @@ class WebTester(tool.Tester):
         try:
             _oper.post_tests()
         except ConditionError:
-            store_test_state(self.sh, self.conv.events)
-            res.store_test_info()
-            res.write_info(test_id, self.fname(test_id))
+            self.store_result(res)
             return False
 
         _ss['index'] = self.conv.index = index + 1
@@ -274,10 +267,7 @@ class WebTester(tool.Tester):
                 return ret
 
         self.handle_request(req, path)
-
-        store_test_state(sh, sh['conv'].events)
-        res = Result(sh, kwargs['profile_handler'])
-        res.store_test_info()
+        self.store_result()
 
         self.conv.index += 1
 
@@ -287,9 +277,8 @@ class WebTester(tool.Tester):
         except Exception as err:
             raise
 
-        store_test_state(sh, sh['conv'].events)
         if isinstance(resp, Response):
-            res.write_info(path, filename)
+            self.store_result()
             return resp
 
         _done = False
@@ -306,8 +295,7 @@ class WebTester(tool.Tester):
                 _ver = Verify(self.chk_factory, self.conv)
                 _ver.test_sequence(self.conv.flow["assert"])
 
-            store_test_state(sh, sh['conv'].events)
-            res.store_test_info()
+            self.store_result()
 
         return self.inut.flow_list()
 

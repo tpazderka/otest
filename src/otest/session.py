@@ -46,7 +46,7 @@ class SessionHandler(object):
         self.extra = kwargs
         self._dict = {}
 
-    def session_setup(self, path="", index=0):
+    def session_setup(self, path="", flow=None, index=0):
         logger.info("session_setup")
 
         _keys = list(self.keys())
@@ -58,12 +58,10 @@ class SessionHandler(object):
                 del self[key]
 
         self["testid"] = path
-        for node in self["tests"]:
-            if node.name == path:
-                self["node"] = node
-                break
+        if not flow:
+            flow = self.test_flows.expanded_conf(path)
 
-        self["flow"] = copy.deepcopy(self.test_flows[path])
+        self['flow'] = flow
         self["sequence"] = self["flow"]["sequence"]
         self["sequence"].append(Done)
         self["index"] = index
@@ -72,20 +70,7 @@ class SessionHandler(object):
         if profile is None:
             profile = self.profile
 
-        _flows = sort(self.order, self.test_flows)
-        self["flow_names"] = [i.name for i in _flows if
-                              pmap(profile, i.desc['profile'])]
-
-        _tests = []
-        for k in self["flow_names"]:
-            try:
-                kwargs = {"mti": self.test_flows[k]["mti"]}
-            except KeyError:
-                kwargs = {}
-            _tests.append(Node(k, self.test_flows[k]["desc"], **kwargs))
-
-        self["tests"] = _tests
-        self["test_info"] = {}
+        self["tests"] = self.test_flows.matches_profile(profile)
         self["profile"] = profile
         return self._dict
 

@@ -1,7 +1,6 @@
 import logging
-#from urllib.parse import parse_qs
+# from urllib.parse import parse_qs
 from future.backports.urllib.parse import parse_qs
-
 
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
@@ -21,7 +20,6 @@ from otest.events import EV_REDIRECT_URL
 from otest.io import eval_state
 from otest.result import Result
 from otest.result import safe_path
-from otest.summation import store_test_state
 from otest.verify import Verify
 
 __author__ = 'roland'
@@ -55,7 +53,7 @@ class Tester(tool.Tester):
 
     def run_flow(self, test_id, index=0, profiles=None, conf=None):
         logger.info("<=<=<=<=< %s >=>=>=>=>" % test_id)
-        self.sh["node"].complete = False
+        self.flows.complete[test_id] = False
         self.conv.test_id = test_id
         self.conv.conf = conf
 
@@ -95,16 +93,12 @@ class Tester(tool.Tester):
                           context=cls.__name__))
                 exception_trace(cls.__name__, err, logger)
                 self.sh["index"] = index
-                res.store_test_info()
-                res.write_info(test_id)
-                store_test_state(self.sh, self.conv.events)
+                self.store_result(res)
                 return CRITICAL
             else:
                 rsp = self.handle_response(resp, index)
                 if rsp:
-                    res.store_test_info()
-                    res.write_info(test_id)
-                    store_test_state(self.sh, self.conv.events)
+                    self.store_result(res)
                     return self.inut.respond(rsp)
 
             index += 1
@@ -121,11 +115,8 @@ class Tester(tool.Tester):
 
             self.conv.events.store(EV_CONDITION, State('Done', status=OK))
 
-        store_test_state(self.sh, self.conv.events)
-        res.store_test_info()
-        res.write_info(test_id)
-
-        return eval_state(self.conv.events)
+        tinfo = self.store_result(res)
+        return tinfo['state']
 
 
 class ClTester(Tester):
@@ -204,13 +195,6 @@ class WebTester(Tester):
         else:
             return None
 
-    def store_state(self, test_id, complete):
-        sess = self.sh
-        sess['node'].complete = complete
-        sess['node'].state = eval_state(sess['conv'].events)
-        res = Result(sess, self.kwargs['profile_handler'])
-        res.write_info(test_id)
-
     def cont(self, environ, ENV):
         query = parse_qs(environ["QUERY_STRING"])
         path = query["path"][0]
@@ -227,16 +211,13 @@ class WebTester(Tester):
 
         index += 1
 
-        res = Result(self.sh, self.kwargs['profile_handler'])
-        res.store_test_info()
-        store_test_state(self.sh, self.conv.events)
+        self.store_result()
 
         try:
             return self.run_flow(path, conf=ENV["conf"], index=index)
         except Exception as err:
             exception_trace("", err, logger)
-            res = Result(self.sh, self.kwargs['profile_handler'])
-            res.write_info(path)
+            self.store_result()
             return self.inut.err_response("run", err)
 
     def async_response(self, conf):

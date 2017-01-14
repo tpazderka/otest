@@ -40,7 +40,7 @@ def get_profile_info(session, test_id=None):
                 return {}
 
         return {"Issuer": iss, "Profile": profile, "Test ID": test_id,
-                "Test description": session["node"].desc,
+                "Test description": session.test_flows[test_id]['desc'],
                 "Timestamp": in_a_while()}
 
     return {}

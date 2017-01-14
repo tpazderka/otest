@@ -21,10 +21,10 @@ def get_test_info(session, test_id):
 
 
 class WebIh(InfoHandling):
-    def __init__(self, conf, flows, desc, profile_handler, profile, lookup,
+    def __init__(self, conf, flows, profile_handler, profile, lookup,
                  cache=None, environ=None, start_response=None, session=None,
                  **kwargs):
-        InfoHandling.__init__(self, flows, profile, desc, profile_handler,
+        InfoHandling.__init__(self, flows, profile, profile_handler,
                               cache, session=session, **kwargs)
 
         self.conf = conf
@@ -46,13 +46,14 @@ class WebIh(InfoHandling):
                         headers=[])
 
         argv = {
-            "tests": self.session["tests"],
+            "flows": self.flows.display_info(self.session['tests']),
             "profile": self.session["profile"],
-            "test_info": list(self.session["test_info"].keys()),
+            #"test_info": list(self.session["test_info"].keys()),
             "base": self.base_url,
-            "headlines": self.desc,
-            "testresults": TEST_RESULTS
         }
+
+        if not argv['base'].endswith('/'):
+            argv['base'] += '/'
 
         argv.update(kwargs)
         return resp(self.environ, self.start_response, **argv)
@@ -62,13 +63,12 @@ class WebIh(InfoHandling):
                         template_lookup=self.lookup,
                         headers=[])
 
-        _conv = self.session["conv"]
-        info = get_test_info(self.session, testid)
+        info = self.flows.test_info[testid]
 
         argv = {
             "profile": info["profile_info"],
             "events": info["events"],
-            "result": represent_result(_conv.events).replace("\n", "<br>\n"),
+            "result": info['result'],
             "base": self.base_url,
         }
 
