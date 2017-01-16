@@ -64,7 +64,7 @@ OP_ORDER = [
 
 
 def construct_app_args(args, conf, operations, func, default_profiles,
-                       inst_conf):
+                       inst_conf, display_order=None):
     """
 
     :param args: Command arguments, argparse instance
@@ -92,10 +92,13 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     except AttributeError:
         profiles = default_profiles
 
+    if display_order is None:
+        display_order = OP_ORDER
+
     flows = FlowState(_flowdir, profile_handler=ProfileHandler,
                       cls_factories=cls_factories,
                       func_factory=func_factory,
-                      display_order=OP_ORDER)
+                      display_order=display_order)
 
     # Add own keys for signing/encrypting JWTs
     jwks, keyjar, kidd = build_keyjar(conf.KEYS)
