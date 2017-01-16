@@ -2,7 +2,8 @@ import json
 import os
 import re
 
-import copy
+from six import text_type
+
 from otest import Unknown, Done
 from otest.func import factory as ofactory
 from otest.prof_util import prof2usage
@@ -258,6 +259,13 @@ def match_usage(spec, **kwargs):
                     for skey, sval in allowed.items():
                         if val[skey] != sval:
                             return False
+                elif key == 'return_type':
+                    # val can be list of one string or just a string
+                    if isinstance(val, text_type):
+                        if val not in allowed:
+                            return False
+                    elif val[0] not in allowed:
+                        return False
                 elif val not in allowed:
                     return False
     return True

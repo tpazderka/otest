@@ -96,12 +96,12 @@ class Result(object):
             _iss = _iss[:-(len(test_id) + 1)]
         if not tag:
             tag = _sess['conv'].tool_config['tag']
-        return safe_path(_iss, tag, _sess['profile'], _sess['testid'])
+        return safe_path(_iss, tag, _sess['profile'], test_id)
 
     def rp_based(self, test_id, tag=''):
         _sess = self.session
         return safe_path(_sess['test_conf']['start_page'],
-                         _sess['profile'], _sess['testid'])
+                         _sess['profile'], test_id)
 
     def write_info(self, tinfo, test_id='', file_name=None, tag=''):
         if not test_id:
@@ -109,9 +109,9 @@ class Result(object):
 
         if file_name is None:
             if isinstance(self.session['conv'].entity, Provider):
-                file_name = self.rp_based(tinfo, tag)
+                file_name = self.rp_based(test_id, tag)
             else:
-                file_name = self.op_based(tinfo, tag)
+                file_name = self.op_based(test_id, tag)
 
         if 'conv' not in self.session:
             return
