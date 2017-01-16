@@ -49,7 +49,7 @@ class WebIh(InfoHandling):
         argv = {
             "flows": self.flows.display_info(self.session['tests']),
             "profile": self.session["profile"],
-            #"test_info": list(self.session["test_info"].keys()),
+            # "test_info": list(self.session["test_info"].keys()),
             "base": self.base_url,
         }
 
@@ -59,7 +59,10 @@ class WebIh(InfoHandling):
         resp = Response(mako_template="profile.mako",
                         template_lookup=self.lookup,
                         headers=[])
-        argv = {"profile": self.session["profile"]}
+
+        argv = {'profile': self.session["profile"],
+                "base": self.base_url}
+
         return resp(self.environ, self.start_response, **argv)
 
     def test_info(self, testid):
