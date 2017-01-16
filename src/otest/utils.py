@@ -1,4 +1,5 @@
 import logging
+import os
 
 SERVER_LOG_FOLDER = "server_log"
 
@@ -37,3 +38,19 @@ def setup_common_log():
     common_logger.setLevel(logging.DEBUG)
 
     return common_logger, hdlr, base_formatter
+
+
+def with_or_without_slash(path):
+    if os.path.isdir(path):
+        return path
+
+    if path.endswith("%2F"):
+        path = path[:-3]
+        if os.path.isdir(path):
+            return path
+    else:
+        path += "%2F"
+        if os.path.isdir(path):
+            return path
+
+    return None

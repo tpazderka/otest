@@ -2,7 +2,7 @@ import os
 
 from future.backports.urllib.parse import quote_plus
 
-from otest.log import with_or_without_slash
+from otest.utils import with_or_without_slash
 from otest.time_util import in_a_while
 
 RESPONSE = 0

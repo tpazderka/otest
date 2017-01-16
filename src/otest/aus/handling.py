@@ -12,7 +12,7 @@ from otest.check import OK
 from otest.check import WARNING
 from otest.check import INCOMPLETE
 from otest.handling import InfoHandling
-from otest.log import with_or_without_slash
+from otest.utils import with_or_without_slash
 from otest.summation import represent_result
 
 __author__ = 'roland'
