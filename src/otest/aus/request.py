@@ -19,7 +19,6 @@ from oic.utils.http_util import get_post
 from otest import Break
 from otest import operation
 from otest import Unknown
-from otest.log import Log
 from otest.events import EV_HTTP_RESPONSE, EV_FAULT
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_RESPONSE
@@ -252,10 +251,6 @@ class AsyncRequest(Request):
         self.csi = None
         self.request = self.conv.msg_factory(self.request_cls)
         self.response = self.conv.msg_factory(self.response_cls)
-        if "comcls" in kwargs:
-            self.com = kwargs["comcls"]()
-        else:
-            self.com = Log
 
     def run(self):
         _client = self.conv.entity
