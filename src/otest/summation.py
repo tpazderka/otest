@@ -2,12 +2,12 @@ import json
 import os
 import tarfile
 
-from otest.check import STATUSCODE
-from otest.check import ERROR
 from otest.check import CRITICAL
-from otest.check import WARNING
+from otest.check import ERROR
 from otest.check import INCOMPLETE
 from otest.check import OK
+from otest.check import STATUSCODE
+from otest.check import WARNING
 from otest.events import EV_CONDITION
 from otest.events import layout
 
@@ -50,7 +50,11 @@ def eval_state(events):
     :param events: An otest.events.Events instance
     :return: An integer representing a status code
     """
-    res = OK
+    if completed(events):
+        res = OK
+    else:
+        res = INCOMPLETE
+
     for state in events.get_data(EV_CONDITION):
         if state.status > res:
             res = state.status
@@ -69,13 +73,11 @@ def get_errors(events):
 
 def result_code(events):
     _state = eval_state(events)
-    if not completed(events):
+    if _state == INCOMPLETE:
         tag = "PARTIAL RESULT"
     else:
         if _state < WARNING:
             tag = "PASSED"
-        elif _state == INCOMPLETE:
-            tag = "PARTIAL RESULT"
         else:
             tag = STATUSCODE[_state]
 
