@@ -139,16 +139,15 @@ class WebTester(Tester):
             exception_trace("display_test_list", err)
             return self.inut.err_response("session_setup", err)
 
-    def set_profile(self, environ):
-        info = parse_qs(get_post(environ))
+    def set_profile(self, info):
         try:
             cp = self.sh["profile"].split(".")
-            cp[0] = info["rtype"][0]
+            cp[0] = info["rtype"]
 
             crsu = []
             for name, cs in list(CRYPTSUPPORT.items()):
                 try:
-                    if info[name] == ["on"]:
+                    if info[name] == "on":
                         crsu.append(cs)
                 except KeyError:
                     pass
@@ -162,7 +161,7 @@ class WebTester(Tester):
                 cp[3] = "".join(crsu)
 
             try:
-                if info["extra"] == ['on']:
+                if info["extra"] == 'on':
                     if len(cp) == 3:
                         cp.extend(["", "+"])
                     elif len(cp) == 4:
