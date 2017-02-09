@@ -87,3 +87,14 @@ def display_profile(spec):
     el.append("</ul></p>")
 
     return "\n".join(el)
+
+
+def display_info(info):
+    line = ['<table>']
+    keys = list(info['tool'].keys())
+    keys.sort()
+    for key in keys:
+        val = info['tool'][key]
+        line.append('<tr><th>{}</th><td>{}</td></tr>'.format(key, val))
+    line.append('</table>')
+    return '\n'.join(line)

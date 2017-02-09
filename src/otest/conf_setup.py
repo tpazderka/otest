@@ -95,10 +95,10 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     if display_order is None:
         display_order = OP_ORDER
 
-    flows = FlowState(_flowdir, profile_handler=ProfileHandler,
-                      cls_factories=cls_factories,
-                      func_factory=func_factory,
-                      display_order=display_order)
+    flow_state = FlowState(_flowdir, profile_handler=ProfileHandler,
+                           cls_factories=cls_factories,
+                           func_factory=func_factory,
+                           display_order=display_order)
 
     # Add own keys for signing/encrypting JWTs
     jwks, keyjar, kidd = build_keyjar(conf.KEYS)
@@ -202,8 +202,8 @@ def construct_app_args(args, conf, operations, func, default_profiles,
 
     # Application arguments
     app_args = {
-        "flows": flows, "conf": conf, "base_url": _base,
-        "client_info": _client_info,  "profiles": profiles,
+        "flow_state": flow_state, "conf": conf, "base_url": _base,
+        "client_info": _client_info, "profiles": profiles,
         "operation": operations, "cache": {}, "profile": _profile,
         "lookup": LOOKUP, 'tool_conf': inst_conf['tool'],
         "profile_handler": ProfileHandler

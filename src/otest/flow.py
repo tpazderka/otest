@@ -162,6 +162,10 @@ class Flow(object):
                 raise
         return {}
 
+    def __contains__(self, item):
+        fname = os.path.join(self.fdir, item + '.json')
+        return os.path.isfile(fname)
+
 
 # ==============================================================================
 

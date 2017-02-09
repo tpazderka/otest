@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class InfoHandling(object):
-    def __init__(self, flows, profile, desc=None, profile_handler=None,
+    def __init__(self, flow_state, profile, desc=None, profile_handler=None,
                  cache=None, session=None, **kwargs):
-        self.flows = flows
+        self.flow_state = flow_state
         self.cache = cache
         self.test_profile = profile
         self.profile_handler = profile_handler
@@ -37,8 +37,8 @@ class InfoHandling(object):
     def get_err_type(self, test_id):
         errt = WARNING
         try:
-            if self.session['profile'].split('.')[0] in self.flows[test_id][
-                    'MTI']:
+            if self.session['profile'].split('.')[0] in self.flow_state[
+                    test_id]['MTI']:
                 errt = ERROR
         except KeyError:
             pass
@@ -63,9 +63,9 @@ class InfoHandling(object):
 
 
 class ClIh(InfoHandling):
-    def __init__(self, flows, profile, desc='', profile_handler=None,
+    def __init__(self, flow_state, profile, desc='', profile_handler=None,
                  cache=None, session=None, **kwargs):
-        InfoHandling.__init__(self, flows, profile, desc, profile_handler,
+        InfoHandling.__init__(self, flow_state, profile, desc, profile_handler,
                               cache, session=session, **kwargs)
 
     def flow_list(self):

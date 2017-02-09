@@ -1,5 +1,5 @@
 from otest import summation
-from otest.events import layout, row
+from otest.events import row
 
 
 def do_assertions(out):
