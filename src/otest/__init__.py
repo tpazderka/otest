@@ -21,7 +21,7 @@ from oic.oauth2 import HttpError
 from otest.events import EV_END
 
 __author__ = 'roland'
-__version__ = '0.6.3'
+__version__ = '0.7.0'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2016 Roland Hedberg'
 
