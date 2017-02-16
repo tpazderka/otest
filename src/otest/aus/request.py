@@ -9,7 +9,7 @@ from future.backports.urllib.parse import parse_qs
 from requests.models import Response
 
 from oic.exception import IssuerMismatch
-from oic.oauth2 import ResponseError
+from oic.oauth2 import ResponseError, compact
 from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import Message
 from oic.oauth2.util import URL_ENCODED
@@ -265,7 +265,7 @@ class AsyncRequest(Request):
                                sender=self.__class__.__name__)
         return Redirect(str(url))
 
-    def parse_response(self, path, inut, message_factory):
+    def parse_response(self, path, inut, message_factory, response=None):
         _ctype = self.response_type
         _conv = self.conv
 
@@ -298,20 +298,17 @@ class AsyncRequest(Request):
 
         # parse the response
         if response_mode == "form_post":
-            info = parse_qs(get_post(inut.environ))
+            info = compact(parse_qs(get_post(inut.environ)))
             _ctype = "dict"
-        elif response_where == "url":
-            info = inut.environ["QUERY_STRING"]
-            _ctype = "urlencoded"
+        elif response_where in ["url", ""]:
+            info = response
+            _ctype = "dict"
         elif response_where == "fragment":
-            query = parse_qs(get_post(inut.environ))
+            query = compact(parse_qs(get_post(inut.environ)))
             try:
-                info = query["fragment"][0]
+                info = query["fragment"]
             except KeyError:
                 return inut.sorry_response(inut.base_url, "missing fragment ?!")
-        elif response_where == "":
-            info = inut.environ["QUERY_STRING"]
-            _ctype = "urlencoded"
         else:  # resp_c.where == "body"
             info = get_post(inut.environ)
 

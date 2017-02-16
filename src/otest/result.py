@@ -91,17 +91,17 @@ class Result(object):
 
     def op_based(self, test_id, tag=''):
         _sess = self.session
-        _iss = get_issuer(_sess['conv'])
+        _iss = _sess.iss
         if _iss.endswith('/' + test_id):
             _iss = _iss[:-(len(test_id) + 1)]
         if not tag:
-            tag = _sess['conv'].tool_config['tag']
-        return safe_path(_iss, tag, _sess['profile'], test_id)
+            tag = _sess.tag
+        return safe_path(_iss, tag, _sess.profile, test_id)
 
     def rp_based(self, test_id, tag=''):
         _sess = self.session
         return safe_path(_sess['test_conf']['start_page'],
-                         _sess['profile'], test_id)
+                         _sess.profile, test_id)
 
     def write_info(self, tinfo, test_id='', file_name=None, tag=''):
         if not test_id:

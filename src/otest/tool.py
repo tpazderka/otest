@@ -44,7 +44,7 @@ class Tester(object):
         self.profile = profile
         self.flows = flows
         self.message_factory = msg_factory
-        self.chk_factory = check_factory
+        self.check_factory = check_factory
         self.client_factory = client_factory
         self.cache = cache
         self.kwargs = kwargs
@@ -131,7 +131,7 @@ class Tester(object):
             try:
                 _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
                             profile=self.profile, test_id=test_id,
-                            funcs=funcs, check_factory=self.chk_factory,
+                            funcs=funcs, check_factory=self.check_factory,
                             cache=self.cache)
                 # self.conv.operation = _oper
                 if profiles:
@@ -176,7 +176,7 @@ class Tester(object):
 
         try:
             if self.conv.flow["assert"]:
-                _ver = Verify(self.chk_factory, self.conv)
+                _ver = Verify(self.check_factory, self.conv)
                 _ver.test_sequence(self.conv.flow["assert"])
         except KeyError:
             pass

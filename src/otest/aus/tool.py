@@ -1,10 +1,8 @@
 import logging
 # from urllib.parse import parse_qs
-from future.backports.urllib.parse import parse_qs
-
+import cherrypy
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
-from oic.utils.http_util import get_post
 
 from otest import Break
 from otest import CRYPTSUPPORT
@@ -31,9 +29,9 @@ class Tester(tool.Tester):
                  check_factory=None, msg_factory=None, cache=None,
                  map_prof=None, **kwargs):
         tool.Tester.__init__(self, io, sh, profile=profile, flows=flows,
-                             msg_factory=msg_factory, cache=cache, **kwargs)
+                             msg_factory=msg_factory, cache=cache,
+                             check_factory=check_factory, **kwargs)
         self.profiles = profiles
-        self.check_factory = check_factory
         self.map_prof = map_prof
         self.conv = None
 
@@ -85,6 +83,8 @@ class Tester(tool.Tester):
                 resp = _oper()
             except Break:
                 break
+            except cherrypy.HTTPError:
+                raise
             except Exception as err:
                 self.conv.events.store(
                     EV_CONDITION,
@@ -193,32 +193,23 @@ class WebTester(Tester):
         else:
             return None
 
-    def cont(self, environ, ENV):
-        query = parse_qs(environ["QUERY_STRING"])
-        path = query["path"][0]
-        index = int(query["index"][0])
-
-        try:
-            index = self.sh["index"]
-        except KeyError:  # Cookie delete broke session
-            self.setup(path, **ENV)
-        except Exception as err:
-            return self.inut.err_response("session_setup", err)
-        else:
-            self.conv = self.sh["conv"]
-
+    def cont(self, **kwargs):
+        path = kwargs['path']
+        index = int(kwargs['index'])
         index += 1
 
         self.store_result()
 
         try:
-            return self.run_flow(path, conf=ENV["conf"], index=index)
+            return self.run_flow(path, index=index)
+        except cherrypy.HTTPRedirect:
+            raise
         except Exception as err:
             exception_trace("", err, logger)
             self.store_result()
             return self.inut.err_response("run", err)
 
-    def async_response(self, conf):
+    def async_response(self, conf, response=None):
         index = self.sh["index"]
         item = self.sh["sequence"][index]
         self.conv = self.sh["conv"]
@@ -231,7 +222,8 @@ class WebTester(Tester):
         logger.info("<--<-- {} --- {}".format(index, cls))
         resp = self.conv.operation.parse_response(self.sh["testid"],
                                                   self.inut,
-                                                  self.message_factory)
+                                                  self.message_factory,
+                                                  response=response)
         if resp:
             return resp
 

@@ -269,24 +269,28 @@ def get_id_tokens(conv):
 
 def get_signed_id_tokens(conv):
     res = []
-    for txt in conv.events.get_data(EV_RESPONSE):
-        try:
-            ent = json.loads(txt)
-        except Exception:
-            try:
-                ent = parse_qs(txt)
-            except:
-                pass
-            else:
-                try:
-                    res.append(ent['id_token'][0])
-                except KeyError:
-                    pass
+    for item in conv.events.get_data(EV_RESPONSE):
+        if isinstance(item, dict):
+            ent = item
         else:
             try:
-                res.append(ent['id_token'])
-            except KeyError:
-                pass
+                ent = json.loads(item)
+            except Exception as err:
+                try:
+                    ent = parse_qs(item)
+                except:
+                    continue
+                else:
+                    try:
+                        res.append(ent['id_token'][0])
+                    except KeyError:
+                        pass
+                    else:
+                        continue
+        try:
+            res.append(ent['id_token'])
+        except KeyError:
+            pass
 
     return res
 

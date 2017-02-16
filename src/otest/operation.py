@@ -5,7 +5,8 @@ import logging
 import time
 import sys
 
-from oic.utils.http_util import Response
+import cherrypy
+from jwkest import as_bytes
 
 from otest.events import EV_EVENT
 from otest.events import EV_EXCEPTION
@@ -39,6 +40,10 @@ def request_with_client_http_session(instance, method, url, **kwargs):
     so we can't bind the instance method directly.
     """
     return instance.conv.entity.http_request(url, method)
+
+
+def link(url):
+    return '<a href="{}">link</a>'.format(url)
 
 
 class Operation(object):
@@ -105,7 +110,12 @@ class Operation(object):
             return
 
         for op, arg in list(self.funcs.items()):
-            op(self, arg)
+            try:
+                op(self, arg)
+            except Exception as err:
+                _txt = "Can't do {}".format(op)
+                self.conv.events.store(EV_EXCEPTION, _txt)
+                raise cherrypy.HTTPError(message=_txt)
 
             # self.conv.events.store(EV_OP_ARGS, self.op_args)
 
@@ -171,36 +181,35 @@ class Operation(object):
 
 
 class Notice(Operation):
-    template = ""
+    pre_html = "message.html"
 
     def __init__(self, conv, inut, sh, **kwargs):
         Operation.__init__(self, conv, inut, sh, **kwargs)
         self.message = ""
 
     def args(self):
-        return {}
+        return {'note':self.message, 'title':self.test_id}
 
     def __call__(self, *args, **kwargs):
-        resp = Response(mako_template=self.template,
-                        template_lookup=self.inut.lookup,
-                        headers=[])
-        return resp(self.inut.environ, self.inut.start_response,
-                    **self.args())
+        _msg = self.inut.pre_html[self.pre_html].format(**self.args())
+        return as_bytes(_msg)
 
 
 class Note(Notice):
-    template = "note.mako"
+    pre_html = "note.html"
 
     def op_setup(self):
         self.message = self.conv.flow["note"]
 
     def args(self):
         return {
-            "url": "%scontinue?path=%s&index=%d" % (
-                self.conv.entity.base_url, self.test_id, self.sh["index"]),
-            "back": self.conv.entity.base_url,
+            "url": link("{}continue?path={}&index={}".format(
+                self.conv.entity.base_url, self.test_id, self.sh["index"])),
+            "back": link(self.conv.entity.base_url),
             "note": self.message,
-            "base": self.conv.entity.base_url
+            "base": link(self.conv.entity.base_url),
+            'header': "OpenID Certification OP Test",
+            'title': self.test_id
         }
 
 
@@ -229,6 +238,16 @@ class ProtocolMessage(object):
 
     def handle_response(self, result, *args):
         raise NotImplementedError()
+
+
+class VerifyConfiguration(Operation):
+    def __init__(self, conv, inut, sh, **kwargs):
+        Operation.__init__(self, conv, inut, sh, **kwargs)
+        self.unsupported = ''
+
+    def __call__(self, *args, **kwargs):
+        if self.unsupported:
+            raise cherrypy.HTTPError(400, message=self.unsupported)
 
 
 def factory(name):
