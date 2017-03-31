@@ -203,7 +203,7 @@ class Note(Notice):
 
     def args(self):
         return {
-            "url": link("{}continue?path={}&index={}".format(
+            "next": link("{}continue?path={}&index={}".format(
                 self.conv.entity.base_url, self.test_id, self.sh["index"])),
             "back": link(self.conv.entity.base_url),
             "note": self.message,

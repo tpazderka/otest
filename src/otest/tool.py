@@ -8,7 +8,8 @@ from otest.check import ERROR
 from otest.check import OK
 from otest.check import State
 from otest.conversation import Conversation
-from otest.events import EV_CONDITION, EV_FAULT
+from otest.events import EV_CONDITION
+from otest.events import EV_FAULT
 from otest.result import Result
 from otest.verify import Verify
 
@@ -24,9 +25,14 @@ def get_redirect_uris(cinfo):
     :return: list of redirect_uris
     """
     try:
-        return cinfo["registration_info"]["redirect_uris"]
+        res = cinfo["registration_info"]["redirect_uris"]
     except KeyError:
-        return cinfo["registration_response"]["redirect_uris"]
+        res = cinfo["registration_response"]["redirect_uris"]
+
+    if isinstance(res, ("".__class__, u"".__class__)):
+        return [res]
+    else:
+        return res
 
 
 class ConfigurationError(Exception):

@@ -54,6 +54,8 @@ class Factory(object):
             if arg in ['keyjar']:
                 continue
             setattr(_cli, arg, val)
+            if arg == 'provider_info':
+                _cli.handle_provider_config(val, val['issuer'])
             c_info[arg] = val
 
         return _cli, c_info
