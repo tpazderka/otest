@@ -1,3 +1,5 @@
+import datetime
+
 import psutil
 
 
@@ -33,21 +35,26 @@ def find_test_instance(iss, tag):
 def find_test_instances(prog):
     pid = {}
     for proc in psutil.process_iter():
-        try:
-            cmd = proc.cmdline()
-        except psutil.AccessDenied:
-            continue
+        _name = proc.name()
+        if _name in ['python', 'python3', 'Python', 'Python3']:
+            try:
+                cmd = proc.cmdline()
+            except psutil.AccessDenied:
+                continue
 
-        if len(cmd) > 5:
-            if cmd[0].endswith('Python') and cmd[1].endswith(prog):
-                i = cmd.index('-i')
-                iss = cmd[i + 1]
-                i = cmd.index('-t')
-                tag = cmd[i + 1]
-                i = cmd.index('-p')
-                port = cmd[i + 1]
-                pid[proc.pid] = {'iss': iss, 'tag': tag, 'port': port}
-
+            if len(cmd) > 5:
+                if cmd[1].endswith(prog):
+                    i = cmd.index('-i')
+                    iss = cmd[i + 1]
+                    i = cmd.index('-t')
+                    tag = cmd[i + 1]
+                    i = cmd.index('-p')
+                    port = cmd[i + 1]
+                    since = datetime.datetime.fromtimestamp(
+                        proc.create_time()).strftime(
+                        "%Y-%m-%d %H:%M:%S")
+                    pid[proc.pid] = {'iss': iss, 'tag': tag, 'port': port,
+                                     'since': since}
     return pid
 
 
@@ -79,5 +86,5 @@ if __name__ == "__main__":
     # iss = sys.argv[1]
     # tag = sys.argv[2]
 
-    inst = find_test_instances('optest.py')
+    inst = find_test_instances('op_test_tool.py')
     print(inst)
