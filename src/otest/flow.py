@@ -2,12 +2,16 @@ import json
 import os
 import re
 
+import logging
 from six import text_type
 
 from otest import Unknown, Done
 from otest.func import factory as ofactory
 from otest.prof_util import prof2usage
 from otest.summation import eval_state, completed, represent_result
+
+logger = logging.getLogger(__name__)
+
 
 PAT = re.compile('\${([A-Z_0-9]*)}')
 
@@ -75,7 +79,8 @@ class Flow(object):
         fp = open(fname, 'r')
         try:
             _info = json.load(fp)
-        except Exception:
+        except Exception as err:
+            logger.error(err)
             raise KeyError(tid)
         finally:
             fp.close()
