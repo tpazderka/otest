@@ -298,19 +298,18 @@ class AsyncRequest(Request):
 
         # parse the response
         if response_mode == "form_post":
-            info = compact(parse_qs(get_post(inut.environ)))
+            info = response
             _ctype = "dict"
         elif response_where in ["url", ""]:
             info = response
             _ctype = "dict"
         elif response_where == "fragment":
-            query = compact(parse_qs(get_post(inut.environ)))
             try:
-                info = query["fragment"]
+                info = response["fragment"]
             except KeyError:
                 return inut.sorry_response(inut.base_url, "missing fragment ?!")
         else:  # resp_c.where == "body"
-            info = get_post(inut.environ)
+            info = response
 
         logger.info("Response: %s" % info)
 
