@@ -12,7 +12,6 @@ from otest.summation import eval_state, completed, represent_result
 
 logger = logging.getLogger(__name__)
 
-
 PAT = re.compile('\${([A-Z_0-9]*)}')
 
 ABBR = {
@@ -128,7 +127,7 @@ class Flow(object):
                     tids.append(tid)
         return tids
 
-    def matches_profile(self, profile):
+    def matches_profile(self, profile, extra=None):
         """
         Return a list of test IDs how all match the profile
         :param profile:
@@ -138,6 +137,20 @@ class Flow(object):
         _tids = []
         _use = prof2usage(profile)
         _use['return_type'] = _use['return_type'][0]
+
+        if extra:
+            if extra['extra']:
+                _use['extra'] = 'T'
+            _crypto = {}
+            for item in ['enc', 'sig', 'none']:
+                try:
+                    if extra[item]:
+                        _crypto[item] = 'T'
+                except KeyError:
+                    pass
+            if _crypto:
+                _use['crypto'] = _crypto
+
         for tid, spec in self.items():
             if match_usage(spec, **_use):
                 _tids.append(tid)
@@ -266,7 +279,10 @@ def match_usage(spec, **kwargs):
             else:
                 if key == 'crypto':
                     for skey, sval in allowed.items():
-                        if val[skey] != sval:
+                        try:
+                            if val[skey] != sval:
+                                return False
+                        except KeyError:
                             return False
                 elif key == 'return_type':
                     # val can be list of one string or just a string
@@ -376,4 +392,3 @@ class FlowState(RPFlow):
                     y.extend(x)
                     res.append(y)
         return res
-
