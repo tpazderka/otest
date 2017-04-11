@@ -40,7 +40,7 @@ def prof2usage(prof):
             elif i == CRYPTO:
                 _v = {}
                 if 's' in _val:
-                    _v['sign'] = 'T'
+                    _v['sig'] = 'T'
                 if 'e' in _val:
                     _v['enc'] = 'T'
                 if 'n' in _val:
