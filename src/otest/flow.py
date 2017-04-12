@@ -5,10 +5,14 @@ import re
 import logging
 from six import text_type
 
-from otest import Unknown, Done
+from otest import Done
+from otest import Unknown
 from otest.func import factory as ofactory
-from otest.prof_util import prof2usage
-from otest.summation import eval_state, completed, represent_result
+from otest.summation import completed
+from otest.summation import eval_state
+from otest.summation import represent_result
+
+from otest.prof_util import from_profile
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +140,7 @@ class Flow(object):
         """
 
         _tids = []
-        _use = prof2usage(profile)
+        _use = from_profile(profile)
         _use['return_type'] = _use['return_type'][0]
         for tid, spec in self.items():
             if match_usage(spec, **_use):
@@ -144,7 +148,7 @@ class Flow(object):
         return _tids
 
     def mandatory_to_implement(self, tid, profile):
-        _use = prof2usage(profile)
+        _use = from_profile(profile)
         _use['return_type'] = _use['return_type'][0]
         spec = self[tid]
         try:
@@ -275,8 +279,13 @@ def match_usage(spec, **kwargs):
                             return False
                     elif val[0] not in allowed:
                         return False
-                elif val not in allowed:
-                    return False
+                else:
+                    if isinstance(allowed, bool):
+                        if val is not allowed:
+                            return False
+                    else:
+                        if val not in allowed:
+                            return False
     return True
 
 
