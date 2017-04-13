@@ -69,6 +69,8 @@ class SessionHandler(object):
     def init_session(self, profile=None):
         if profile is None:
             profile = self.profile
+        else:
+            self.profile = profile
 
         self["tests"] = self.test_flows.matches_profile(profile)
         self["profile"] = profile
