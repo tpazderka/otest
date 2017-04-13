@@ -141,7 +141,6 @@ class Flow(object):
 
         _tids = []
         _use = from_profile(profile)
-        _use['return_type'] = _use['return_type'][0]
         for tid, spec in self.items():
             if match_usage(spec, **_use):
                 _tids.append(tid)
