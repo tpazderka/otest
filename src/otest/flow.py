@@ -35,8 +35,11 @@ GRPS = [
     "Discovery", "Dynamic Client Registration",
     "Response Type and Response Mode", "claims Request Parameter",
     "request_uri Request Parameter", "scope Request Parameter",
-    "nonce Request Parameter", "Client Authentication",
-    "ID Token", "Key Rotation", "Claims Types", "UserInfo Endpoint"
+    "nonce Request Parameter", 'redirect_uri Request Parameter',
+    'prompt Request Parameter', 'request Request Parameter',
+    "Client Authentication", "OAuth behaviors",
+    "ID Token", "Key Rotation", "Claims Types", "UserInfo Endpoint",
+    'Misc Request Parameters', 'Key Rotation', 'Access Token'
 ]
 
 

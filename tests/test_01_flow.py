@@ -4,7 +4,7 @@ from otest.flow import match_usage, Flow
 from otest.prof_util import from_profile
 
 PROFILE = ['C.T.T.T.e', 'C.T.T.T.s', 'C.T.T.T.se', 'C.T.T.T.sen',
-           'C.T.T.T.sen.+']
+           'C.T.T.T.sen.+', 'C.T.T.F', 'C.F.T.F', 'C.T.T.T']
 
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "flows"))
 
@@ -43,3 +43,9 @@ def test_flow():
     assert len(tl) == 64
     tl = _flow.matches_profile(PROFILE[4])
     assert len(tl) == 93
+    tl = _flow.matches_profile(PROFILE[5])
+    assert len(tl) == 41
+    tl = _flow.matches_profile(PROFILE[6])
+    assert len(tl) == 41
+    tl = _flow.matches_profile(PROFILE[7])
+    assert len(tl) == 55
