@@ -133,7 +133,7 @@ class Flow(object):
 
     def matches_profile(self, profile):
         """
-        Return a list of test IDs how all match the profile
+        Return a list of test IDs that all match the profile
         :param profile:
         :return:
         """
@@ -266,14 +266,7 @@ def match_usage(spec, **kwargs):
             except KeyError:
                 return False
             else:
-                if key == 'crypto':
-                    for skey, sval in allowed.items():
-                        try:
-                            if val[skey] != sval:
-                                return False
-                        except KeyError:
-                            return False
-                elif key == 'return_type':
+                if key == 'return_type':
                     # val can be list of one string or just a string
                     if isinstance(val, text_type):
                         if val not in allowed:
