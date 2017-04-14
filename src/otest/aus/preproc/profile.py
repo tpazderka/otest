@@ -1,11 +1,16 @@
 from otest.aus.preproc import PMAP
+from otest.prof_util import CRYPTO, EMAP, EXTRAS
 
 PMAPL = list(PMAP.keys())
 PMAPL.sort()
 
 L2I = {"discovery": 1, "registration": 2}
-CRYPTSUPPORT = {"none": "n", "signing": "s", "encryption": "e"}
+LONG_NAMES = {"none": "none", "sig": "signing", "enc": "encryption"}
 
+RADIO = '<input type="radio" name="{}" value="{}">{}<br>'
+RADIO_C = '<input type="radio" name="{}" value="{}" checked>{}<br>'
+CHECK = '<input type="checkbox" name="{}">{}<br>'
+CHECK_C = '<input type="checkbox" name="{}" checked>{}<br>'
 
 def profile_form(prof):
     p = prof.split(".")
@@ -13,12 +18,9 @@ def profile_form(prof):
     for key in PMAPL:
         txt = PMAP[key]
         if key == p[0]:
-            el.append(
-                '<input type="radio" name="rtype" value="%s" checked>%s<br>' % (
-                    key, txt))
+            el.append(RADIO_C.format('return_type', key, txt))
         else:
-            el.append('<input type="radio" name="rtype" value="%s">%s<br>' % (
-                key, txt))
+            el.append(RADIO.format('return_type', key, txt))
     el.append("<br>")
     el.append("These you can't change here:")
     el.append("<ul>")
@@ -28,26 +30,24 @@ def profile_form(prof):
         else:
             el.append("<li>Static %s" % mode)
     el.append("</ul><p>Cryptographic support:<br>")
-    if len(p) == 3:
-        vs = "sen"
+    if len(p) > CRYPTO:
+        vs = p[CRYPTO]
     else:
-        if p[3] == '':
-            vs = "sen"
+        vs = ''
+
+    for code, attr in EMAP.items():
+        if code in vs:
+            el.append(CHECK_C.format(attr, LONG_NAMES[attr]))
         else:
-            vs = p[3]
-    for name, typ in CRYPTSUPPORT.items():
-        if typ in vs:
-            el.append('<input type="checkbox" name="%s" checked>%s<br>' % (
-                name, name))
-        else:
-            el.append('<input type="checkbox" name="%s">%s<br>' % (name, name))
+            el.append(CHECK.format(attr, LONG_NAMES[attr]))
     el.append("</p>")
+
     el.append(
         '</ul><p>Check this if you want extra tests (not needed for any '
         'certification profiles): ')
-    if len(p) == 5 and p[4] == "+":
-        el.append('<input type="checkbox" name="extra" checked>')
+    if len(p) > EXTRAS and p[EXTRAS] == "+":
+        el.append(CHECK_C.format('extra',''))
     else:
-        el.append('<input type="checkbox" name="extra">')
+        el.append(CHECK.format('extra',''))
     el.append('</p>')
     return "\n".join(el)

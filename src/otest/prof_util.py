@@ -22,6 +22,10 @@ EMAP = {'s': 'sig', 'n': 'none', 'e': 'enc'}
 EKEYS = list(EMAP.keys())
 EKEYS.sort()  # Make the result deterministic
 
+PKEYS = LABEL[:]
+PKEYS.remove('crypto')
+PKEYS.extend(list(EMAP.values()))
+
 RT = {"C": "code", "I": "id_token", "T": "token", "CT": "code token",
       'CI': 'code id_token', 'IT': 'id_token token',
       'CIT': 'code id_token token'}
@@ -187,6 +191,36 @@ def do_discovery(profile):
 
 def return_type(profile):
     return profile.split('.')[RESPONSE]
+
+
+def update_profile(old, new):
+    oa = from_profile(old)
+    na = from_profile(new)
+    oa.update(na)
+    return to_profile(oa)
+
+
+def compress_profile(item):
+    _prof = to_profile(item)
+    item['profile'] = _prof
+    for attr in PKEYS:
+        try:
+            del item[attr]
+        except KeyError:
+            pass
+    return item
+
+
+def expand_profile(item):
+    try:
+        _prof = from_profile(item['profile'])
+    except KeyError:
+        pass
+    else:
+        del item['profile']
+        item.update(_prof)
+
+    return item
 
 
 def _cmp_prof(a, b):

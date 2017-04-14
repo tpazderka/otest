@@ -131,7 +131,7 @@ class Flow(object):
                     tids.append(tid)
         return tids
 
-    def matches_profile(self, profile, extra=None):
+    def matches_profile(self, profile):
         """
         Return a list of test IDs how all match the profile
         :param profile:
@@ -140,21 +140,6 @@ class Flow(object):
 
         _tids = []
         _use = from_profile(profile)
-        _use['return_type'] = _use['return_type'][0]
-
-        if extra:
-            if extra['extra']:
-                _use['extra'] = 'T'
-            _crypto = {}
-            for item in ['enc', 'sig', 'none']:
-                try:
-                    if extra[item]:
-                        _crypto[item] = 'T'
-                except KeyError:
-                    pass
-            if _crypto:
-                _use['crypto'] = _crypto
-
         for tid, spec in self.items():
             if match_usage(spec, **_use):
                 _tids.append(tid)

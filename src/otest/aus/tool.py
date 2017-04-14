@@ -1,5 +1,7 @@
 import logging
 # from urllib.parse import parse_qs
+from urllib.parse import quote_plus
+
 import cherrypy
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
@@ -15,6 +17,7 @@ from otest.check import OK
 from otest.check import State
 from otest.events import EV_CONDITION, EV_OPERATION
 from otest.events import EV_REDIRECT_URL
+from otest.prof_util import to_profile, from_profile, compress_profile
 from otest.result import Result
 from otest.result import safe_path
 from otest.verify import Verify
@@ -141,42 +144,30 @@ class WebTester(Tester):
 
     def set_profile(self, info):
         try:
-            cp = self.sh["profile"].split(".")
-            cp[0] = info["rtype"]
-
-            crsu = []
-            for name, cs in list(CRYPTSUPPORT.items()):
-                try:
-                    if info[name] == "on":
-                        crsu.append(cs)
-                except KeyError:
-                    pass
-
-            if len(cp) == 3:
-                if len(crsu) == 3:
-                    pass
-                else:
-                    cp.append("".join(crsu))
-            else:  # len >= 4
-                cp[3] = "".join(crsu)
-
             try:
-                if info["extra"] == 'on':
-                    if len(cp) == 3:
-                        cp.extend(["", "+"])
-                    elif len(cp) == 4:
-                        cp.append("+")
-                    elif len(cp) == 5:
-                        cp[4] = "+"
-                else:
-                    if len(cp) == 5:
-                        cp = cp[:-1]
+                old = from_profile(self.sh['profile'])
             except KeyError:
-                if len(cp) == 5:
-                    cp = cp[:-1]
+                old = from_profile(self.sh.profile)
+
+            new = from_profile(to_profile(info))
+            for attr in ['enc', 'extra','none', 'return_type', 'sig']:
+                old[attr] = new[attr]
+
+            # Store new configuration
+            try:
+                rest = self.kwargs['rest']
+            except KeyError:
+                _profile = to_profile(old)
+            else:
+                qp = [quote_plus(p) for p in [self.sh.iss, self.sh.tag]]
+                _, _conf = rest.read_conf(*qp)
+                _conf['tool'].update(compress_profile(old))
+                rest.store(qp[0], qp[1], _conf)
+                _profile = old['profile']
 
             # reset all test flows
-            self.sh.reset_session(profile=".".join(cp))
+            self.sh.reset_session(profile=_profile)
+            # Back to test list
             return self.inut.flow_list()
         except Exception as err:
             return self.inut.err_response("profile", err)

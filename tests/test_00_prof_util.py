@@ -77,3 +77,4 @@ def test_repr_profile():
     rp = repr_profile(TKEYS[6].split('.'), representation="list")
     assert rp == ['code+id_token+token', 'no-webfinger', 'no-discovery',
                   'static', 'sign']
+
