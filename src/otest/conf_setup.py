@@ -200,13 +200,13 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     # if args.profile:
     #     _profile = args.profile
     # else:
-    _profile = inst_conf['tool']['profile']
+    # _profile = inst_conf['tool']['profile']
 
     # Application arguments
     app_args = {
         "flow_state": flow_state, "conf": conf, "base_url": _base,
         "client_info": _client_info, "profiles": profiles,
-        "operation": operations, "cache": {}, "profile": _profile,
+        "operation": operations, "cache": {}, # "profile": _profile,
         "lookup": LOOKUP, 'tool_conf': inst_conf['tool'],
         "profile_handler": ProfileHandler
     }

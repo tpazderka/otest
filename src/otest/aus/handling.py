@@ -24,10 +24,10 @@ TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
 
 
 class WebIh(InfoHandling):
-    def __init__(self, conf=None, flows=None, profile_handler=None, profile='',
+    def __init__(self, conf=None, flows=None, profile_handler=None,
                  lookup=None, cache=None, environ=None, start_response=None,
                  session=None, base_url='', **kwargs):
-        InfoHandling.__init__(self, flows=flows, profile=profile,
+        InfoHandling.__init__(self, flows=flows,
                               profile_handler=profile_handler,
                               cache=cache, session=session, **kwargs)
 

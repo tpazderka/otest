@@ -15,14 +15,20 @@ logger = logging.getLogger(__name__)
 
 
 class InfoHandling(object):
-    def __init__(self, flow_state, profile, desc=None, profile_handler=None,
+    def __init__(self, flow_state, desc=None, profile_handler=None,
                  cache=None, session=None, **kwargs):
         self.flow_state = flow_state
         self.cache = cache
-        self.test_profile = profile
         self.profile_handler = profile_handler
         self.desc = desc
         self.session = session
+
+    @property
+    def profile(self):
+        if self.session:
+            return self.session.profile
+        else:
+            return ''
 
     def represent_result(self, events):
         return represent_result(events)
@@ -37,7 +43,7 @@ class InfoHandling(object):
     def get_err_type(self, test_id):
         errt = WARNING
         try:
-            if self.session['profile'].split('.')[0] in self.flow_state[
+            if self.session.profile.split('.')[0] in self.flow_state[
                     test_id]['MTI']:
                 errt = ERROR
         except KeyError:

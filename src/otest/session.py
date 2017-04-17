@@ -39,12 +39,15 @@ class Node(object):
 
 
 class SessionHandler(object):
-    def __init__(self, profile='', flows=None, order=None, **kwargs):
-        self.profile = profile
+    def __init__(self, flows=None, order=None, **kwargs):
         self.test_flows = flows
         self.order = order
         self.extra = kwargs
         self._dict = {}
+
+    @property
+    def profile(self):
+        return self.extra['profile']
 
     def session_setup(self, path="", flow=None, index=0):
         logger.info("session_setup")
@@ -69,11 +72,8 @@ class SessionHandler(object):
     def init_session(self, profile=None):
         if profile is None:
             profile = self.profile
-        else:
-            self.profile = profile
 
         self["tests"] = self.test_flows.matches_profile(profile)
-        self["profile"] = profile
         return self._dict
 
     def reset_session(self, profile=None):

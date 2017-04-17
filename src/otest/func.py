@@ -427,6 +427,9 @@ def set_start_page(oper, args):
     oper.start_page = _url + '?' + urlencode(_args)
 
 
+def set_target(oper, args):
+    oper.op_args['target'] = oper.conv.entity.provider_info['issuer']
+
 
 def factory(name):
     for fname, obj in inspect.getmembers(sys.modules[__name__]):
