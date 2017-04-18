@@ -8,15 +8,18 @@ from requests.models import Response
 
 from oic.exception import IssuerMismatch
 from oic.oauth2 import ResponseError
+from oic.oauth2.message import AccessTokenResponse
 from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import Message
 from oic.oauth2.util import URL_ENCODED
+from oic.oic.message import IdToken
 from oic.utils.http_util import Redirect
 
 from otest import Break
 from otest import operation
 from otest import Unknown
-from otest.events import EV_HTTP_RESPONSE, EV_FAULT
+from otest.events import EV_FAULT
+from otest.events import EV_HTTP_RESPONSE
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_RESPONSE
 from otest.events import EV_REQUEST
@@ -144,8 +147,12 @@ class SyncRequest(Request):
                         sformat="json", state=state)
 
             _ent = self.conv.entity
-            resp.verify(keyjar=_ent.keyjar, client_id=_ent.client_id,
-                        iss=_ent.provider_info['issuer'])
+            if isinstance(resp, AccessTokenResponse) and isinstance(
+                    resp['id_token'], IdToken):
+                pass
+            else:
+                resp.verify(keyjar=_ent.keyjar, client_id=_ent.client_id,
+                            iss=_ent.provider_info['issuer'])
         elif r.status_code == 400:
             if r.headers['content-type'] == 'application/json':
                 resp = ErrorResponse().from_json(r.text)
@@ -178,10 +185,13 @@ class SyncRequest(Request):
                         if len(keys) > 1:
                             raise ParameterError("No 'kid' in id_token header!")
 
-                    if self.req_args['nonce'] != _id_token['nonce']:
-                        raise ParameterError(
-                            "invalid nonce! {} != {}".format(
-                                self.req_args['nonce'], _id_token['nonce']))
+                    try:
+                        if self.req_args['nonce'] != _id_token['nonce']:
+                            raise ParameterError(
+                                "invalid nonce! {} != {}".format(
+                                    self.req_args['nonce'], _id_token['nonce']))
+                    except KeyError:
+                        pass
 
                     if not same_issuer(self.conv.info["issuer"],
                                        _id_token["iss"]):
