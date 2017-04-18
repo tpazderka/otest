@@ -7,6 +7,8 @@ import sys
 
 import cherrypy
 from jwkest import as_bytes
+from oic.oauth2.message import ErrorResponse
+from otest import Break
 
 from otest.events import EV_EVENT
 from otest.events import EV_EXCEPTION
@@ -14,8 +16,6 @@ from otest.events import EV_FUNCTION
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_RESPONSE
 from otest.verify import Verify
-
-from otest.events import EV_OP_ARGS
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class Operation(object):
                 self.conv.events.store(EV_EXCEPTION, _txt)
                 raise cherrypy.HTTPError(message=_txt)
 
-            # self.conv.events.store(EV_OP_ARGS, self.op_args)
+                # self.conv.events.store(EV_OP_ARGS, self.op_args)
 
     def apply_profile(self, profile_map):
         try:
@@ -143,7 +143,7 @@ class Operation(object):
         self.op_setup()
         self._setup()
 
-    def catch_exception(self, func, **kwargs):
+    def catch_exception_and_error(self, func, **kwargs):
         res = None
         try:
             self.conv.events.store(EV_FUNCTION,
@@ -166,6 +166,29 @@ class Operation(object):
                     EV_EVENT, 'Expected exception did not occur')
                 raise Exception(
                     "Expected exception '{}'.".format(self.expect_exception))
+
+            if self.expect_error:
+                #l = self.conv.events.events[-1].data
+                try:
+                    assert isinstance(res, ErrorResponse)
+                except AssertionError:
+                    self.conv.events.store(
+                        EV_EVENT, 'Expected error not received')
+                else:
+                    if res['error'] not in self.expect_error['error']:
+                        self.conv.events.store(
+                            EV_EVENT,
+                            'Expected error not received: got {}'.format(
+                                res['error']))
+                    else:
+                        self.conv.events.store(EV_EVENT, "Got expected error")
+
+                    try:
+                        if self.expect_error['stop']:
+                            raise Break('Stop')
+                    except KeyError:
+                        pass
+
             if res:
                 if isinstance(res, self.message_cls):
                     self.conv.events.store(EV_PROTOCOL_RESPONSE, res)
@@ -188,7 +211,7 @@ class Notice(Operation):
         self.message = ""
 
     def args(self):
-        return {'note':self.message, 'title':self.test_id}
+        return {'note': self.message, 'title': self.test_id}
 
     def __call__(self, *args, **kwargs):
         _msg = self.inut.pre_html[self.pre_html].format(**self.args())

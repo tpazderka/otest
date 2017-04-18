@@ -18,38 +18,281 @@ LABEL = ['return_type', 'webfinger', 'discover', 'register', 'crypto',
 __author__ = 'roland'
 
 
-def prof2usage(prof):
-    p = prof.split('.')
-    res = {}
-    for i in range(0, 6):
-        if len(p) == i:
-            break
+EMAP = {'s': 'sig', 'n': 'none', 'e': 'enc'}
+EKEYS = list(EMAP.keys())
+EKEYS.sort()  # Make the result deterministic
 
+PKEYS = LABEL[:]
+PKEYS.remove('crypto')
+PKEYS.extend(list(EMAP.values()))
+
+RT = {"C": "code", "I": "id_token", "T": "token", "CT": "code token",
+      'CI': 'code id_token', 'IT': 'id_token token',
+      'CIT': 'code id_token token'}
+RT_INV = dict([(v,k) for k,v in RT.items()])
+
+WF = {'T': 'webfinger', 'F': 'no-webfinger'}
+OC = {"T": "discovery", "F": "no-discovery"}
+REG = {"T": "dynamic", "F": "static"}
+CR = {"n": "none", "s": "sign", "e": "encrypt"}
+EX = {"+": "extras"}
+ATTR = ["return_type", "webfinger", "openid-configuration", "registration",
+        "crypto", "extras"]
+
+
+def simplify_return_type(spec):
+    if ',' in spec:
+        p = spec.split(',')
+    elif ' ' in spec:
+        p = spec.split(' ')
+    else:
+        p = [spec]
+    p.sort()
+    return RT_INV[' '.join(p)]
+
+
+def abbr_return_type(spec):
+    return RT[spec]
+
+
+def verify_profile(profile):
+    p = profile.split('.')
+    if len(p) < 4:
+        return False
+    if p[0] not in ['C', 'I', 'IT', 'CT', 'CIT', 'CI']:
+        return False
+    for i in range(1, 4):
+        if p[i] not in ['F', 'T']:
+            return False
+    return True
+
+
+def from_profile(code):
+    # Of the form <typ>.<webf>.<disc>.<reg>.*['+'/'n'/'s'/'se']
+    # for example:
+    # C.T.T.T..  - code response_type, webfinger & dynamic discovery &
+    #                                   registration
+    # CIT.F.T.F.. - response_type=["code","id_token","token"],
+    #               No webfinger support,
+    #               does dynamic discovery
+    #               and static client registration
+
+    p = code.split('.')
+
+    _prof = {"return_type": p[RESPONSE],
+             "webfinger": (p[WEBFINGER] == 'T'),
+             "discover": (p[DISCOVER] == 'T'),
+             "register": (p[REGISTER] == 'T'),
+             "extra": False,
+             "sig": False,
+             'enc': False,
+             'none': False}
+
+    if len(p) > CRYPTO:
+        for k, v in EMAP.items():
+            if k in p[CRYPTO]:
+                _prof[v] = True
+    if len(p) > EXTRAS:
+        if '+' in p[EXTRAS]:
+            _prof['extra'] = True
+
+    return _prof
+
+
+def to_profile(pdict):
+    code = pdict["return_type"]
+
+    for key in ["webfinger", "discover", "register"]:
         try:
-            _val = p[i]
+            if pdict[key]:
+                code += ".T"
+            else:
+                code += ".F"
+        except KeyError:
+            code += ".F"
+
+    ext = ''
+    for k in EKEYS:
+        try:
+            if pdict[EMAP[k]]:
+                ext += k
+        except KeyError:
+            pass
+
+    try:
+        _xtra = pdict['extra']
+    except KeyError:
+        _xtra = None
+
+    if ext:
+        code += '.' + ext
+    elif _xtra:
+        code += '.'
+
+    if _xtra:
+        code += '.+'
+
+    return "".join(code)
+
+
+def repr_profile(profile, representation="list", with_webfinger=True):
+    """
+
+    :param profile: Expected to be list of items
+    :param representation: Which type of output that is expected
+    :param with_webfinger: Is WebFinger specification included
+    :return:
+    """
+    prof = ["+".join([RT[x] for x in profile[0]])]
+    if with_webfinger:
+        _spec = [WF, OC, REG]
+    else:
+        _spec = [OC, REG]
+
+    i = 0
+    for tag_text in _spec:
+        i += 1
+        try:
+            prof.append("%s" % tag_text[profile[i]])
         except IndexError:
             pass
-        else:
-            if not _val:
-                continue
 
-            if i == RESPONSE:
-                _val = _val.split(',')
-            elif WEBFINGER <= i <= REGISTER:
-                pass
-            elif i == CRYPTO:
-                _v = {}
-                if 's' in _val:
-                    _v['sign'] = 'T'
-                if 'e' in _val:
-                    _v['enc'] = 'T'
-                if 'n' in _val:
-                    _v['none'] = 'T'
-                _val = _v
+    try:
+        i += 1
+        prof.append("%s" % "+".join([CR[x] for x in profile[i]]))
+    except (KeyError, IndexError):
+        pass
+    else:
+        try:
+            i += 1
+            prof.append("%s" % EX[profile[i]])
+        except (KeyError, IndexError):
+            pass
+
+    if representation == "list":
+        return prof
+    elif representation == "dict":
+        ret = {}
+        for r in range(0, len(prof)):
+            ret[ATTR[r]] = prof[r]
+
+        if "extras" in ret:
+            ret["extras"] = True
+        return ret
+
+
+def do_registration(profile):
+    return profile.split('.')[REGISTER]
+
+
+def do_discovery(profile):
+    return profile.split('.')[DISCOVER]
+
+
+def return_type(profile):
+    return profile.split('.')[RESPONSE]
+
+
+def update_profile(old, new):
+    oa = from_profile(old)
+    na = from_profile(new)
+    oa.update(na)
+    return to_profile(oa)
+
+
+def compress_profile(item):
+    _prof = to_profile(item)
+    item['profile'] = _prof
+    for attr in PKEYS:
+        try:
+            del item[attr]
+        except KeyError:
+            pass
+    return item
+
+
+def expand_profile(item):
+    try:
+        _prof = from_profile(item['profile'])
+    except KeyError:
+        pass
+    else:
+        del item['profile']
+        item.update(_prof)
+
+    return item
+
+
+def _cmp_prof(a, b):
+    """
+
+    :param a: list of strings
+    :param b: list of strings
+    :return: True/False if a maps to b
+    """
+    # basic, implicit, hybrid
+    if b[RESPONSE] != "":
+        if a[RESPONSE] not in b[RESPONSE].split(','):
+            return False
+
+    try:
+        # dynamic discovery & registry
+        for n in [WEBFINGER, DISCOVER, REGISTER]:
+            if b[n] != "":
+                if a[n] != b[n]:
+                    return False
+    except IndexError:
+        print("Too short a:{}, b:{}".format(a, b))
+        raise
+
+    if len(a) > CRYPTO:
+        if len(b) > CRYPTO:
+            if b[CRYPTO] != '':
+                if not set(a[CRYPTO]).issuperset(set(b[CRYPTO])):
+                    return False
+
+    if len(b) > EXTRAS:
+        if len(a) > EXTRAS:
+            if a[EXTRAS] != b[EXTRAS]:
+                return False
+        else:
+            return False
+
+    return True
+
+
+def map_prof(a, b):
+    """
+    Checks that the demands in b are met by a
+
+    :param a:
+    :param b:
+    :return: True/False
+    """
+    if a == b:
+        return True
+
+    if isinstance(b, list):
+        return _cmp_prof(a, b)
+    elif '.' in b:
+        b = b.split('.')
+        if '.' in a:
+            a = a.split('.')
+        return _cmp_prof(a, b)
+    else:
+        if b == '*':
+            return True
+        else:
+            bl = b.split(',')
+            if isinstance(a, list):
+                if a[0] in bl:
+                    return True
+                else:
+                    return False
+            elif a in bl:
+                return True
             else:
-                _val = 'T'
-            res[LABEL[i]] = _val
-    return res
+                return False
 
 
 class ProfileHandler(object):
@@ -123,11 +366,6 @@ class ProfileHandler(object):
             _test_id = kwargs['test_id']
 
         return "{}/{}/{}".format(path, prof, _test_id)
-
-
-RT = {"C": "code", "I": "id_token", "T": "token", "CT": "code token",
-      'CI': 'code id_token', 'IT': 'id_token token',
-      'CIT': 'code id_token token'}
 
 
 class SimpleProfileHandler(ProfileHandler):

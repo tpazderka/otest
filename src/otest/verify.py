@@ -42,7 +42,7 @@ class Verify(object):
                     pass
                 else:
                     if _val:
-                        self.conv.events(
+                        self.conv.events.store(
                             EV_FAULT,
                             "{label}: {val}".format(val=_val, label=label))
 

@@ -33,9 +33,9 @@ TEST_RESULTS = {OK: "OK", ERROR: "ERROR", WARNING: "WARNING",
 
 class WebIh(InfoHandling):
     def __init__(self, conf=None, flow_state=None, profile_handler=None,
-                 profile='', cache=None, session=None, base_url='',
+                 cache=None, session=None, base_url='',
                  pre_html=None, **kwargs):
-        InfoHandling.__init__(self, flow_state=flow_state, profile=profile,
+        InfoHandling.__init__(self, flow_state=flow_state,
                               profile_handler=profile_handler,
                               cache=cache, session=session, **kwargs)
 

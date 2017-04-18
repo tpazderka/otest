@@ -7,7 +7,7 @@ RT = {"C": "code", "T": "token", 'D': 'client_credentials'}
 
 class ProfileHandler(prof_util.ProfileHandler):
     def to_profile(self, representation="list"):
-        p = self.session['profile'].split('.')
+        p = self.session.profile.split('.')
         prof = RT[p[0]]
 
         if representation == "list":

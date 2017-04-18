@@ -1,10 +1,12 @@
 import logging
 # from urllib.parse import parse_qs
+from urllib.parse import quote_plus
+
 import cherrypy
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
 
-from otest import Break
+from otest import Break, ConditionError
 from otest import CRYPTSUPPORT
 from otest import Done
 from otest import exception_trace
@@ -15,6 +17,7 @@ from otest.check import OK
 from otest.check import State
 from otest.events import EV_CONDITION, EV_OPERATION
 from otest.events import EV_REDIRECT_URL
+from otest.prof_util import to_profile, from_profile, compress_profile
 from otest.result import Result
 from otest.result import safe_path
 from otest.verify import Verify
@@ -25,10 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 class Tester(tool.Tester):
-    def __init__(self, io, sh, profiles, profile, flows=None,
+    def __init__(self, io, sh, profiles, flows=None,
                  check_factory=None, msg_factory=None, cache=None,
                  map_prof=None, **kwargs):
-        tool.Tester.__init__(self, io, sh, profile=profile, flows=flows,
+        tool.Tester.__init__(self, io, sh, flows=flows,
                              msg_factory=msg_factory, cache=cache,
                              check_factory=check_factory, **kwargs)
         self.profiles = profiles
@@ -37,16 +40,16 @@ class Tester(tool.Tester):
 
     def match_profile(self, test_id):
         _spec = self.flows[test_id]
-        return self.map_prof(self.profile.split("."),
+        return self.map_prof(self.sh.profile.split("."),
                              _spec["profile"].split("."))
 
     def fname(self, test_id):
         try:
             return safe_path(
                 self.conv.entity.provider_info['issuer'],
-                self.profile, test_id)
+                self.sh.profile, test_id)
         except KeyError:
-            return safe_path('dummy', self.profile, test_id)
+            return safe_path('dummy', self.sh.profile, test_id)
 
     def run_flow(self, test_id, index=0, profiles=None, conf=None):
         logger.info("<=<=<=<=< %s >=>=>=>=>" % test_id)
@@ -74,7 +77,7 @@ class Tester(tool.Tester):
             self.conv.events.store(EV_OPERATION, _line)
             try:
                 _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
-                            profile=self.profile, test_id=test_id, conf=conf,
+                            profile=self.sh.profile, test_id=test_id, conf=conf,
                             funcs=funcs, check_factory=self.check_factory,
                             cache=self.cache,
                             tool_conf=self.kwargs['tool_conf'])
@@ -108,11 +111,13 @@ class Tester(tool.Tester):
                     _ver = Verify(self.check_factory, self.conv)
                     _ver.test_sequence(self.conv.flow["assert"])
             except KeyError:
+                self.conv.events.store(EV_CONDITION, State('Done', status=OK))
+            except ConditionError:
                 pass
             except Exception as err:
                 raise
-
-            self.conv.events.store(EV_CONDITION, State('Done', status=OK))
+            else:
+                self.conv.events.store(EV_CONDITION, State('Done', status=OK))
 
         tinfo = self.store_result(res)
         return tinfo['state']
@@ -141,42 +146,33 @@ class WebTester(Tester):
 
     def set_profile(self, info):
         try:
-            cp = self.sh["profile"].split(".")
-            cp[0] = info["rtype"]
+            old = from_profile(self.sh.profile)
 
-            crsu = []
-            for name, cs in list(CRYPTSUPPORT.items()):
-                try:
-                    if info[name] == "on":
-                        crsu.append(cs)
-                except KeyError:
-                    pass
+            new = from_profile(to_profile(info))
+            for attr in ['enc', 'extra','none', 'return_type', 'sig']:
+                old[attr] = new[attr]
 
-            if len(cp) == 3:
-                if len(crsu) == 3:
-                    pass
-                else:
-                    cp.append("".join(crsu))
-            else:  # len >= 4
-                cp[3] = "".join(crsu)
-
+            # Store new configuration
             try:
-                if info["extra"] == 'on':
-                    if len(cp) == 3:
-                        cp.extend(["", "+"])
-                    elif len(cp) == 4:
-                        cp.append("+")
-                    elif len(cp) == 5:
-                        cp[4] = "+"
-                else:
-                    if len(cp) == 5:
-                        cp = cp[:-1]
+                rest = self.sh.extra['rest']
             except KeyError:
-                if len(cp) == 5:
-                    cp = cp[:-1]
+                self.conv.tool_conf.update(compress_profile(old))
+            else:
+                qp = [quote_plus(p) for p in [self.sh.iss, self.sh.tag]]
+                _, _conf = rest.read_conf(*qp)
+                _conf['tool'].update(compress_profile(old))
+                rest.store(qp[0], qp[1], _conf)
+
+                # This will fail if no test has been run before the conf
+                # is changed
+                try:
+                    self.conv.tool_conf = _conf['tool']
+                except AttributeError:
+                    pass
 
             # reset all test flows
-            self.sh.reset_session(profile=".".join(cp))
+            self.sh.reset_session(profile=old['profile'])
+            # Back to test list
             return self.inut.flow_list()
         except Exception as err:
             return self.inut.err_response("profile", err)

@@ -4,17 +4,14 @@ import copy
 import sys
 
 from bs4 import BeautifulSoup
-# from urllib.parse import parse_qs
-from future.backports.urllib.parse import parse_qs
 from requests.models import Response
 
 from oic.exception import IssuerMismatch
-from oic.oauth2 import ResponseError, compact
+from oic.oauth2 import ResponseError
 from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import Message
 from oic.oauth2.util import URL_ENCODED
 from oic.utils.http_util import Redirect
-from oic.utils.http_util import get_post
 
 from otest import Break
 from otest import operation
@@ -215,18 +212,8 @@ class SyncRequest(Request):
         self.conv.events.store(EV_REQUEST, csi, sender=self.__class__.__name__)
         http_response = self.do_request(_client, url, body, http_args)
 
-        response = self.catch_exception(self.handle_response, r=http_response,
-                                        csi=csi)
-
-        if self.expect_error:
-            response = self.expected_error_response(response)
-            self.conv.events.store(EV_RESPONSE, response,
-                                   sender=self.__class__.__name__)
-        else:
-            self.conv.events.store(EV_RESPONSE, response,
-                                   sender=self.__class__.__name__)
-            if isinstance(response, ErrorResponse):
-                raise Break("Unexpected error response")
+        self.catch_exception_and_error(self.handle_response, r=http_response,
+                                       csi=csi)
 
 
 class AsyncRequest(Request):
@@ -298,19 +285,18 @@ class AsyncRequest(Request):
 
         # parse the response
         if response_mode == "form_post":
-            info = compact(parse_qs(get_post(inut.environ)))
+            info = response
             _ctype = "dict"
         elif response_where in ["url", ""]:
             info = response
             _ctype = "dict"
         elif response_where == "fragment":
-            query = compact(parse_qs(get_post(inut.environ)))
             try:
-                info = query["fragment"]
+                info = response["fragment"]
             except KeyError:
                 return inut.sorry_response(inut.base_url, "missing fragment ?!")
         else:  # resp_c.where == "body"
-            info = get_post(inut.environ)
+            info = response
 
         logger.info("Response: %s" % info)
 

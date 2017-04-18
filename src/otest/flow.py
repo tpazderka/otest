@@ -2,12 +2,19 @@ import json
 import os
 import re
 
+import logging
 from six import text_type
 
-from otest import Unknown, Done
+from otest import Done
+from otest import Unknown
 from otest.func import factory as ofactory
-from otest.prof_util import prof2usage
-from otest.summation import eval_state, completed, represent_result
+from otest.summation import completed
+from otest.summation import eval_state
+from otest.summation import represent_result
+
+from otest.prof_util import from_profile
+
+logger = logging.getLogger(__name__)
 
 PAT = re.compile('\${([A-Z_0-9]*)}')
 
@@ -28,8 +35,11 @@ GRPS = [
     "Discovery", "Dynamic Client Registration",
     "Response Type and Response Mode", "claims Request Parameter",
     "request_uri Request Parameter", "scope Request Parameter",
-    "nonce Request Parameter", "Client Authentication",
-    "ID Token", "Key Rotation", "Claims Types", "UserInfo Endpoint"
+    "nonce Request Parameter", 'redirect_uri Request Parameter',
+    'prompt Request Parameter', 'request Request Parameter',
+    "Client Authentication", "OAuth behaviors",
+    "ID Token", "Key Rotation", "Claims Types", "UserInfo Endpoint",
+    'Misc Request Parameters', 'Key Rotation', 'Access Token'
 ]
 
 
@@ -75,7 +85,8 @@ class Flow(object):
         fp = open(fname, 'r')
         try:
             _info = json.load(fp)
-        except Exception:
+        except Exception as err:
+            logger.error(err)
             raise KeyError(tid)
         finally:
             fp.close()
@@ -125,21 +136,20 @@ class Flow(object):
 
     def matches_profile(self, profile):
         """
-        Return a list of test IDs how all match the profile
+        Return a list of test IDs that all match the profile
         :param profile:
         :return:
         """
 
         _tids = []
-        _use = prof2usage(profile)
-        _use['return_type'] = _use['return_type'][0]
+        _use = from_profile(profile)
         for tid, spec in self.items():
             if match_usage(spec, **_use):
                 _tids.append(tid)
         return _tids
 
     def mandatory_to_implement(self, tid, profile):
-        _use = prof2usage(profile)
+        _use = from_profile(profile)
         _use['return_type'] = _use['return_type'][0]
         spec = self[tid]
         try:
@@ -259,19 +269,20 @@ def match_usage(spec, **kwargs):
             except KeyError:
                 return False
             else:
-                if key == 'crypto':
-                    for skey, sval in allowed.items():
-                        if val[skey] != sval:
-                            return False
-                elif key == 'return_type':
+                if key == 'return_type':
                     # val can be list of one string or just a string
                     if isinstance(val, text_type):
                         if val not in allowed:
                             return False
                     elif val[0] not in allowed:
                         return False
-                elif val not in allowed:
-                    return False
+                else:
+                    if isinstance(allowed, bool):
+                        if val is not allowed:
+                            return False
+                    else:
+                        if val not in allowed:
+                            return False
     return True
 
 
@@ -371,4 +382,3 @@ class FlowState(RPFlow):
                     y.extend(x)
                     res.append(y)
         return res
-

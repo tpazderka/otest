@@ -44,22 +44,24 @@ RP_ORDER = [
 
 OP_ORDER = [
     "Response Type & Response Mode",
-    "ID Token",
-    "Userinfo Endpoint",
-    "nonce Request Parameter",
-    "scope Request Parameter",
-    "display Request Parameter",
-    "prompt Request Parameter",
-    "Misc Request Parameters",
-    "OAuth behaviors",
-    "redirect_uri",
-    "Client Authentication",
     "Discovery",
     "Dynamic Client Registration",
-    "Key Rotation",
-    "request_uri Request Parameter",
+    "redirect_uri",
+    "ID Token",
+    "Client Authentication",
+    'Access Token',
+    "Userinfo Endpoint",
+    'claims Request Parameter',
+    "display Request Parameter",
+    "nonce Request Parameter",
+    "prompt Request Parameter",
+    'redirect_uri Request Parameter',
     "request Request Parameter",
-    "claims Request Parameter"
+    "request_uri Request Parameter",
+    "scope Request Parameter",
+    "Misc Request Parameters",
+    "OAuth behaviors",
+    "Key Rotation",
 ]
 
 
@@ -198,13 +200,13 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     # if args.profile:
     #     _profile = args.profile
     # else:
-    _profile = inst_conf['tool']['profile']
+    # _profile = inst_conf['tool']['profile']
 
     # Application arguments
     app_args = {
         "flow_state": flow_state, "conf": conf, "base_url": _base,
         "client_info": _client_info, "profiles": profiles,
-        "operation": operations, "cache": {}, "profile": _profile,
+        "operation": operations, "cache": {}, # "profile": _profile,
         "lookup": LOOKUP, 'tool_conf': inst_conf['tool'],
         "profile_handler": ProfileHandler
     }

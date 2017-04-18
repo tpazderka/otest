@@ -10,34 +10,34 @@ INCOMING = 1
 OUTGOING = 2
 
 # standard event labels
-EV_ASSERTION = 'Assertion'
-EV_CONDITION = 'Condition'
-EV_EXCEPTION = 'Exception'
-EV_END = 'End'
-EV_EVENT = 'Event'
-EV_FAULT = 'Fault'
-EV_FUNCTION = 'Function'
-EV_HANDLER_RESPONSE = 'Handler response'
-EV_HTML_SRC = 'HTML src'
-EV_HTTP_ARGS = 'HTTP args'
-EV_HTTP_INFO = 'HTTP info'
-EV_HTTP_REQUEST = 'HTTP request'
-EV_HTTP_RESPONSE = 'HTTP response'
-EV_HTTP_RESPONSE_HEADER = 'HTTP response header'
-EV_NOOP = 'Not expected to do'
-EV_OPERATION = 'Phase'
-EV_OP_ARGS = 'Operation args'
-EV_PROTOCOL_RESPONSE = 'Protocol response'
-EV_PROTOCOL_REQUEST = 'Protocol request'
-EV_REDIRECT_URL = 'Redirect url'
-EV_REPLY = 'Reply'
-EV_REQUEST = 'Request'
-EV_REQUEST_ARGS = 'Request args'
-EV_RESPONSE = 'Response'
-EV_RESPONSE_ARGS = 'Response args'
-EV_RUN = 'Run'
-EV_SEND = 'Send'
-EV_URL = 'URL'
+EV_ASSERTION = 'assertion'
+EV_CONDITION = 'condition'
+EV_EXCEPTION = 'exception'
+EV_END = 'end'
+EV_EVENT = 'event'
+EV_FAULT = 'fault'
+EV_FUNCTION = 'function'
+EV_HANDLER_RESPONSE = 'handler response'
+EV_HTML_SRC = 'html src'
+EV_HTTP_ARGS = 'http args'
+EV_HTTP_INFO = 'http info'
+EV_HTTP_REQUEST = 'http request'
+EV_HTTP_RESPONSE = 'http response'
+EV_HTTP_RESPONSE_HEADER = 'http response header'
+EV_NOOP = 'not expected to do'
+EV_OPERATION = 'phase'
+EV_OP_ARGS = 'operation args'
+EV_PROTOCOL_RESPONSE = 'protocol response'
+EV_PROTOCOL_REQUEST = 'protocol request'
+EV_REDIRECT_URL = 'redirect url'
+EV_REPLY = 'reply'
+EV_REQUEST = 'request'
+EV_REQUEST_ARGS = 'request args'
+EV_RESPONSE = 'response'
+EV_RESPONSE_ARGS = 'response args'
+EV_RUN = 'run'
+EV_SEND = 'send'
+EV_URL = 'url'
 
 
 class NoSuchEvent(Exception):
@@ -129,7 +129,10 @@ class Event(object):
         self.timestamp = timestamp or time.time()
         self.typ = typ
         self.data = data
-        self.ref = ref
+        try:
+            self.ref = ref.lower()
+        except AttributeError:
+            self.ref = ref
         self.sub = sub
         self.sender = sender
         self.direction = direction
@@ -159,6 +162,7 @@ class Events(object):
               **kwargs):
         index = time.time()
 
+        typ = typ.lower()
         if typ == EV_HTTP_RESPONSE:  # only store part of the instance
             data = HTTPResponse(data)
 
@@ -174,13 +178,18 @@ class Events(object):
             raise KeyError(index)
 
     def by_ref(self, ref):
-        return [e for e in self.events if e.ref == ref]
+        try:
+            lr = ref.lower()
+        except AttributeError:
+            lr = ref
+        return [e for e in self.events if e.ref == lr]
 
     def by_direction(self, direction):
         return [e for e in self.events if e.direction == direction]
 
     def get(self, typ):
-        return [ev for ev in self.events if ev.typ == typ]
+        ltyp = typ.lower()
+        return [ev for ev in self.events if ev.typ == ltyp]
 
     def get_data(self, typ, sender=''):
         if sender:
