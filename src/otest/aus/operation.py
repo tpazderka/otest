@@ -110,7 +110,7 @@ class RotateKey(Operation):
         elif typ == "EC":
             kb = ec_init(key_spec)
         else:
-            Exception('Wrong key type')
+            raise Exception('Wrong key type')
 
         # add new key to keyjar with
         list(kb.keys())[0].kid = self.op_args["new_kid"]
@@ -207,7 +207,7 @@ class RotateKeys(Operation):
 class RotateSigKeys(RotateKeys):
     def __init__(self, conv, inut, sh, **kwargs):
         RotateKeys.__init__(self, conv, inut, sh, **kwargs)
-        self.new_key = {"type": "RSA", "key": "../keys/second_sig.key",
+        self.new_key = {"type": "RSA", "key": "./keys/second_sig.key",
                         "use": ["sig"]}
         self.kid_template = "sig%d"
 
@@ -215,7 +215,7 @@ class RotateSigKeys(RotateKeys):
 class RotateEncKeys(RotateKeys):
     def __init__(self, conv, inut, sh, **kwargs):
         RotateKeys.__init__(self, conv, inut, sh, **kwargs)
-        self.new_key = {"type": "RSA", "key": "../keys/second_enc.key",
+        self.new_key = {"type": "RSA", "key": "./keys/second_enc.key",
                         "use": ["enc"]}
         self.kid_template = "enc%d"
 
