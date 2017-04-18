@@ -270,7 +270,7 @@ class VerifyConfiguration(Operation):
 
     def __call__(self, *args, **kwargs):
         if self.unsupported:
-            raise cherrypy.HTTPError(400, message=self.unsupported)
+            raise Break(self.unsupported)
 
 
 def factory(name):
