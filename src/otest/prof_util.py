@@ -182,11 +182,17 @@ def repr_profile(profile, representation="list", with_webfinger=True):
 
 
 def do_registration(profile):
-    return profile.split('.')[REGISTER]
+    if profile.split('.')[REGISTER] == 'F':
+        return False
+    else:
+        return True
 
 
 def do_discovery(profile):
-    return profile.split('.')[DISCOVER]
+    if profile.split('.')[DISCOVER] == 'F':
+        return False
+    else:
+        return True
 
 
 def return_type(profile):
