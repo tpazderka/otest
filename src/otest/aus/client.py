@@ -1,5 +1,6 @@
 from oic import oic
 from oic.extension import client
+from oic.oic import RegistrationResponse
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 from otest.events import EV_RESPONSE
 from otest.events import EV_PROTOCOL_RESPONSE
@@ -56,6 +57,9 @@ class Factory(object):
             setattr(_cli, arg, val)
             if arg == 'provider_info':
                 _cli.handle_provider_config(val, val['issuer'])
+            elif arg == 'registration_response':
+                resp = RegistrationResponse(**val)
+                _cli.store_registration_info(resp)
             c_info[arg] = val
 
         return _cli, c_info
