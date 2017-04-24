@@ -431,6 +431,10 @@ def set_target(oper, args):
     oper.op_args['target'] = oper.conv.entity.provider_info['issuer']
 
 
+def set_info_issuer(oper, args):
+    oper.conv.info["issuer"] = oper.conv.get_tool_attribute("issuer")
+
+
 def factory(name):
     for fname, obj in inspect.getmembers(sys.modules[__name__]):
         if inspect.isfunction(obj):
