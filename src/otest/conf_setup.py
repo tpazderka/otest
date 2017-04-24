@@ -188,9 +188,15 @@ def construct_app_args(args, conf, operations, func, default_profiles,
             pass
 
     _client_info.update(
-        {"base_url": _base, 'client_id': _base, "kid": kidd, "keyjar": keyjar,
+        {"base_url": _base, "kid": kidd, "keyjar": keyjar,
          "jwks_uri": jwks_uri}
     )
+
+    # try:
+    #     _client_info['client_id'] = _client_info['registration_response'][
+    #         'client_id']
+    # except KeyError:
+    #     pass
 
     if args.insecure:
         _client_info['verify_ssl'] = False
@@ -206,7 +212,7 @@ def construct_app_args(args, conf, operations, func, default_profiles,
     app_args = {
         "flow_state": flow_state, "conf": conf, "base_url": _base,
         "client_info": _client_info, "profiles": profiles,
-        "operation": operations, "cache": {}, # "profile": _profile,
+        "operation": operations, "cache": {},  # "profile": _profile,
         "lookup": LOOKUP, 'tool_conf': inst_conf['tool'],
         "profile_handler": ProfileHandler
     }
