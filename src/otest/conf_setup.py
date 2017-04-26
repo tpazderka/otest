@@ -6,13 +6,10 @@ import sys
 from mako.lookup import TemplateLookup
 from oic.utils.keyio import build_keyjar
 
-from otest.parse_cnf import parse_yaml_conf
 from otest.prof_util import ProfileHandler
 from otest.rp.setup import read_path2port_map
-from otest.utils import SERVER_LOG_FOLDER
-from otest.utils import setup_logging
 
-from otest.flow import Flow, RPFlow, FlowState
+from otest.flow import FlowState
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +68,7 @@ def construct_app_args(args, conf, operations, func, default_profiles,
 
     :param args: Command arguments, argparse instance
     :param conf: Service configuration
-    :param oper: Operations module
+    :param operations: Operations module
     :param func: Functions module
     :param default_profiles: The default profiles module
     :param inst_conf: Test instance configuration
