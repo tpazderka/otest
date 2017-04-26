@@ -171,6 +171,8 @@ class WebTester(Tester):
                     pass
 
             # reset all test flows
+            self.flows.test_info = {}
+            self.flows.complete = {}
             self.sh.reset_session(profile=old['profile'])
             # Back to test list
             return self.inut.flow_list()
