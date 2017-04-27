@@ -8,6 +8,7 @@ import sys
 import cherrypy
 from jwkest import as_bytes
 from oic.oauth2.message import ErrorResponse
+from oic.oauth2.message import Message
 from otest import Break
 
 from otest.events import EV_EVENT
@@ -144,6 +145,20 @@ class Operation(object):
         self._setup()
 
     def catch_exception_and_error(self, func, **kwargs):
+        """
+        Seven possible use case
+        1) The function returns an instance of the expected class
+        2) The function returns a Message instance but not of the expected type
+        3) The function returns an expected exception
+        4) The function returns an unexpected exception
+        5) The function returns an expected error message
+        6) The function returns an unexpected error message
+        7) Something else is returned.
+
+        :param func:
+        :param kwargs:
+        :return:
+        """
         res = None
         try:
             self.conv.events.store(EV_FUNCTION,
@@ -188,10 +203,19 @@ class Operation(object):
                             raise Break('Stop')
                     except KeyError:
                         pass
+            else:
+                if isinstance(res, ErrorResponse):
+                    self.conv.events.store(EV_EVENT, "Got unexpected error")
+                    raise Break('Stop')
 
             if res:
                 if isinstance(res, self.message_cls):
                     self.conv.events.store(EV_PROTOCOL_RESPONSE, res)
+                elif isinstance(res, ErrorResponse):
+                    pass
+                elif isinstance(res, Message):
+                    self.conv.events.store(EV_EVENT, "Got unexpected response")
+                    raise Break('Unexpected response')
                 else:
                     self.conv.events.store(EV_RESPONSE, res)
         return res
