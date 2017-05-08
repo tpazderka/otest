@@ -78,6 +78,7 @@ class Operation(object):
             self.internal = kwargs['internal']
         except KeyError:
             self.internal = True
+        self.unsupported = False
 
     def run(self, *args, **kwargs):
         return None
