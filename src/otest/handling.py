@@ -69,10 +69,11 @@ class InfoHandling(object):
 
 
 class ClIh(InfoHandling):
-    def __init__(self, flow_state, profile, desc='', profile_handler=None,
+    def __init__(self, flows=None, profile='', desc='', profile_handler=None,
                  cache=None, session=None, **kwargs):
-        InfoHandling.__init__(self, flow_state, profile, desc, profile_handler,
-                              cache, session=session, **kwargs)
+        InfoHandling.__init__(self, flows, profile=profile, desc=desc,
+                              profile_handler=profile_handler,
+                              cache=cache, session=session, **kwargs)
 
     def flow_list(self):
         pass

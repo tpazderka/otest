@@ -334,7 +334,6 @@ class FlowState(RPFlow):
     def _test_info(self, test_id, events, index, session):
         _info = {
             'test_id': test_id,
-            "descr": self[test_id]["desc"],
             "events": events,
             "index": index,
             "test_output": events.get('condition'),
@@ -342,6 +341,11 @@ class FlowState(RPFlow):
             "complete": completed(events),
             "result": represent_result(events)
         }
+
+        try:
+            _info["descr"] = self[test_id]["desc"]
+        except KeyError:
+            _info['descr'] = session['flow']['desc']
 
         if _info['complete']:
             self.complete[test_id] = True
