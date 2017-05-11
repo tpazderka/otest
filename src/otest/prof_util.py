@@ -17,7 +17,6 @@ LABEL = ['return_type', 'webfinger', 'discover', 'register', 'crypto',
 
 __author__ = 'roland'
 
-
 EMAP = {'s': 'sig', 'n': 'none', 'e': 'enc'}
 EKEYS = list(EMAP.keys())
 EKEYS.sort()  # Make the result deterministic
@@ -29,7 +28,7 @@ PKEYS.extend(list(EMAP.values()))
 RT = {"C": "code", "I": "id_token", "T": "token", "CT": "code token",
       'CI': 'code id_token', 'IT': 'id_token token',
       'CIT': 'code id_token token'}
-RT_INV = dict([(v,k) for k,v in RT.items()])
+RT_INV = dict([(v, k) for k, v in RT.items()])
 
 WF = {'T': 'webfinger', 'F': 'no-webfinger'}
 OC = {"T": "discovery", "F": "no-discovery"}
@@ -80,13 +79,17 @@ def from_profile(code):
     p = code.split('.')
 
     _prof = {"return_type": p[RESPONSE],
-             "webfinger": (p[WEBFINGER] == 'T'),
-             "discover": (p[DISCOVER] == 'T'),
-             "register": (p[REGISTER] == 'T'),
              "extra": False,
              "sig": False,
              'enc': False,
              'none': False}
+
+    for x, y in {WEBFINGER: 'webfinger', DISCOVER: 'discover',
+              REGISTER: 'register'}.items():
+        try:
+            _prof[y] = (p[x] == 'T')
+        except (KeyError, IndexError):
+            _prof[y] = True
 
     if len(p) > CRYPTO:
         for k, v in EMAP.items():
@@ -133,7 +136,6 @@ def to_profile(pdict):
         code += '.+'
 
     return "".join(code)
-
 
 def repr_profile(profile, representation="list", with_webfinger=True):
     """

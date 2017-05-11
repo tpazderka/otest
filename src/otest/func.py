@@ -139,15 +139,11 @@ def set_uri(oper, args):
     oper.req_args[args[0]] = "%s://%s/%s" % (p.scheme, p.netloc, args[1])
 
 
-def get_base(cconf=None):
+def get_base(base_url):
     """
     Make sure a '/' terminated URL is returned
     """
-    try:
-        part = urlparse(cconf["_base_url"])
-    except KeyError:
-        part = urlparse(cconf["base_url"])
-    # part = urlparse(cconf["redirect_uris"][0])
+    part = urlparse(base_url)
 
     if part.path:
         if not part.path.endswith("/"):

@@ -65,17 +65,16 @@ class Conversation(object):
 
         :param attr: A list of attributes
         :param default: If none of the attributes have a value return this
-        :return: An attribute value or the default value
+        :return: An attribute value or the default value. If no attribute 
+        value or default value raise KeyError.
         """
         for claim in attr:
             try:
                 return self.tool_config[claim]
             except KeyError:
                 pass
-        try:
-            return kwargs['default']
-        except KeyError:
-            return None
+
+        return kwargs['default']
 
     def get_redirect_uris(self):
         try:
