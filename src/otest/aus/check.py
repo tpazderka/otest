@@ -465,6 +465,18 @@ class VerifyResponse(ExpectedError):
     """
     cid = "verify-response"
     msg = "Expected OpenID Connect response"
+    doc = """
+    :param response_cls: Which responses the test tool has received
+    :type response_cls: list of strings
+
+    Example:
+        "verify-response": {
+          "response_cls": [
+            "AuthorizationResponse",
+            "AccessTokenResponse"
+          ]
+        }
+    """
 
     def _func(self, conv):
         inst = conv.events.last_item(EV_PROTOCOL_RESPONSE)
