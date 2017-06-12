@@ -12,6 +12,7 @@ import inspect
 import traceback
 import sys
 
+from otest.events import EV_PROTOCOL_REQUEST
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_REDIRECT_URL
 from otest.events import EV_RESPONSE
@@ -249,6 +250,10 @@ def get_provider_info(conv):
 
 def get_protocol_response(conv, cls):
     return conv.events.get_messages(EV_PROTOCOL_RESPONSE, cls)
+
+
+def get_protocol_request(conv, cls):
+    return conv.events.get_messages(EV_PROTOCOL_REQUEST, cls)
 
 
 def get_id_tokens(conv):
