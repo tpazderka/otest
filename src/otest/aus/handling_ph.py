@@ -55,7 +55,9 @@ class WebIh(InfoHandling):
             op_choice=op_choice(
                 self.base_url,
                 self.flow_state.display_info(_tests)),
-            legends=legends())
+            legends=legends(),
+            version=self.session.tool_version
+        )
         return _msg
 
     def profile_edit(self):
