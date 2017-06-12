@@ -55,7 +55,9 @@ class WebIh(InfoHandling):
             op_choice=op_choice(
                 self.base_url,
                 self.flow_state.display_info(_tests)),
-            legends=legends())
+            legends=legends(),
+            version=self.session.tool_version
+        )
         return _msg
 
     def profile_edit(self):
@@ -94,11 +96,13 @@ class WebIh(InfoHandling):
         else:
             _events = info['events']
             _msg = self.pre_html['testinfo.html'].format(
-                profile_output=profile_output(info["profile_info"]),
+                profile_output=profile_output(
+                    info["profile_info"],
+                    version=self.session.tool_version),
                 trace_output=trace_output(_events),
                 result=represent_result(_events).replace("\n", "<br>\n"),
                 assertions=do_assertions(_events),
-                base=self.base_url
+                base=self.base_url,
             )
             return _msg
 

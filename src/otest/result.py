@@ -122,13 +122,14 @@ class Result(object):
 
         _pi = tinfo['profile_info']
 
+        output = ["Test tool version: {}".format(self.session.tool_version)]
         if _pi:
             _keys = list(_pi.keys())
             _keys.sort()
-            output = ["%s: %s" % (k, _pi[k]) for k in _keys]
+            output.extend(["%s: %s" % (k, _pi[k]) for k in _keys])
         else:
-            output = ['Test ID: {}'.format(_conv.test_id),
-                      "Timestamp: {}".format(in_a_while())]
+            output.extend(['Test ID: {}'.format(_conv.test_id),
+                           "Timestamp: {}".format(in_a_while())])
 
         _events = tinfo["events"]
         output.extend(["", sline, ""])
