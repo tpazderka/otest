@@ -21,8 +21,10 @@ def trace_output(events):
     return "\n".join(element)
 
 
-def profile_output(pinfo):
+def profile_output(pinfo, version=''):
     element = ['<div class="profile">']
+    if version:
+        element.append("<em>%s:</em> %s<br>" % ('Test tool version', version))
     for key, val in pinfo.items():
         element.append("<em>%s:</em> %s<br>" % (key, val))
     element.append('</div>')

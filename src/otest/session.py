@@ -39,10 +39,11 @@ class Node(object):
 
 
 class SessionHandler(object):
-    def __init__(self, flows=None, order=None, **kwargs):
+    def __init__(self, flows=None, order=None, tool_version='', **kwargs):
         self.test_flows = flows
         self.order = order
         self.extra = kwargs
+        self.tool_version = tool_version
         self._dict = {}
 
     @property
