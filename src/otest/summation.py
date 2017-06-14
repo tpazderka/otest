@@ -128,13 +128,12 @@ def condition(events, html=False):
 
     """
     if html:
-        element = ['<div class="condition">',"<h3>Conditions</h3>", "<pre><code>"]
+        element = [""]
     else:
         element = ["Conditions\n"]
     for cond in events.get_data(EV_CONDITION):
         element.append('{}'.format(cond))
     if html:
-        element.append("</code></pre></div>")
         return "\n".join(element)
     else:
         element.append("\n")

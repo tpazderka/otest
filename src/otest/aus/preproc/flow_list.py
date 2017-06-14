@@ -6,59 +6,60 @@ def op_choice(base, flows):
     Creates a list of test flows
     """
     _grp = "_"
-    color = ['<img src="/static/black.png" alt="Black">',  # INFORMATION
-             '<img src="/static/green.png" alt="Green">',  # OK
-             '<img src="/static/yellow.png" alt="Yellow">',  # WARNING
-             '<img src="/static/red.png" alt="Red">',  # ERROR
-             '<img src="/static/red.png" alt="Red">',  # CRITICAL
-             '<img src="/static/qmark.jpg" alt="QuestionMark">',  # INTERACTION
-             '<img src="/static/qmark.jpg" alt="QuestionMark">',  # INCOMPLETE
-             '<img src="/static/greybutton" alt="Grey">',  # NOT_APPLICABLE
+    color = ['<button type="button" class="btn btn-default" title="Black"><span class="glyphicon glyphicon-play"></span></button>',  # INFORMATION
+             '<button type="button" class="btn btn-success" title="Green"><span class="glyphicon glyphicon-ok-sign"></span></button>',  # OK
+             '<button type="button" class="btn btn-warning" title="Yellow"><span class="glyphicon glyphicon-warning-sign"></span></button>',  # WARNING
+             '<button type="button" class="btn btn-danger" title="Red"><span class="glyphicon glyphicon-minus-sign"></span></button>',  # ERROR
+             '<button type="button" class="btn btn-danger" title="Red"><span class="glyphicon glyphicon-minus-sign"></span></button>',  # CRITICAL
+             '<button type="button" class="btn btn-default" title="QuestionMark"><span class="glyphicon glyphicon-question-sign"></span></button>',  # INTERACTION
+             '<button type="button" class="btn btn-default" title="QuestionMark"><span class="glyphicon glyphicon-question-sign"></span></button>',  # INCOMPLETE
+             '<button type="button" class="btn btn-default" title="Grey"><span class="glyphicon glyphicon-record"></span></button>',  # NOT_APPLICABLE
              ]
     line = [
-        '<table>',
-        '<tr><th>Status</th><th>Description</th><th>Info</th></tr>']
+        '<table class="table table-hover table-bordered table-condensed">',
+        '<tr><th>Status</th><th>Name</th><th>Description</th><th>Info</th></tr>']
 
     for grp, state, desc, tid in flows:
         b = tid.split("-", 2)[1]
         if not grp == _grp:
             _grp = grp
-            _item = '<td colspan="3" class="center"><b>{}</b></td>'.format(_grp)
+            _item = '<td colspan="4" class="text-center info"><b>{}</b></td>'.format(_grp)
             line.append(
                 '<tr id="{}">{}</tr>'.format(b, _item))
 
         if state:
-            _info = "<a href='{}test_info/{}'><img " \
-                    "src='/static/info32.png'></a>".format(
+            _info = "<a href='{}test_info/{}' class=\"btn btn-info\" role=\"button\"><span class=\"glyphicon glyphicon-info-sign\"></span></a>".format(
                 base, tid)
         else:
             _info = ''
 
         _stat = "<a href='{}{}'>{}</a>".format(base, tid, color[state])
         line.append(
-            '<tr><td>{}</td><td>{} ({})</td><td>{}</td></tr>'.format(
-                _stat, desc, tid, _info))
+            '<tr><td>{}</td><td style="vertical-align: middle;">({})</td><td style="vertical-align: middle;">{}</td><td>{}</td></tr>'.format(
+                _stat, tid, desc, _info))
     line.append('</table>')
 
     return "\n".join(line)
 
 
 ICONS = [
-    ('<img src="/static/black.png" alt="Black">', "The test has not be run"),
-    ('<img src="/static/green.png" alt="Green">', "Success"),
-    ('<img src="/static/yellow.png" alt="Yellow">',
-     "Warning, something was not as expected"),
-    ('<img src="/static/red.png" alt="Red">', "Failed"),
-    ('<img src="/static/qmark.jpg" alt="QuestionMark">',
-     "The test flow wasn't completed. This may have been expected or not"),
-    ('<img src="/static/info32.png">',
-     "Signals the fact that there are trace information available for the "
-     "test"),
+    ('<button type="button" class="btn btn-default" title="Black"><span class="glyphicon glyphicon-play"></span></button>',
+     "The test has not been run yet."),
+    ('<button type="button" class="btn btn-success" title="Green"><span class="glyphicon glyphicon-ok-sign"></span></button>',
+     "The test succeeded."),
+    ('<button type="button" class="btn btn-warning" title="Yellow"><span class="glyphicon glyphicon-warning-sign"></span></button>',
+     "Warning, something was not as expected."),
+    ('<button type="button" class="btn btn-danger"  title="Red"><span class="glyphicon glyphicon-minus-sign"></span></button>',
+     "The test failed."),
+    ('<button type="button" class="btn btn-default" title="QuestionMark"><span class="glyphicon glyphicon-question-sign"></span></button>',     
+     "The test flow wasn't completed. This may have been expected or not."),
+    ('<button type="button" class="btn btn-info"><span class="glyphicon glyphicon-info-sign"></span></button>',
+     "Signals the fact that there is trace information available for the test."),
 ]
 
 
 def legends():
-    element = ["<table border='1' id='legends'>"]
+    element = ["<table class=\"table table-condensed\" id=\"legends\">"]
     for icon, txt in ICONS:
         element.append("<tr><td>%s</td><td>%s</td></tr>" % (icon, txt))
     element.append('</table>')
@@ -70,21 +71,21 @@ CM = {"n": "none", "s": "sign", "e": "encrypt"}
 
 
 def display_profile(spec):
-    el = ["<p><ul>"]
+    el = ["<table class=\"table table-condensed\">"]
     p = spec.split('.')
-    el.append("<li> %s" % PMAP[p[0]])
+    el.append("<tr><td>%s</td></tr>" % PMAP[p[0]])
     for mode in ["webfinger", "discovery", "registration"]:
         if p[L2I[mode]] == "T":
-            el.append("<li> Dynamic %s" % mode)
+            el.append("<tr><td>Dynamic %s</td></tr>" % mode)
         else:
-            el.append("<li> Static %s" % mode)
+            el.append("<tr><td>Static %s</td></tr>" % mode)
     if len(p) > 4:
         if p[4]:
-            el.append("<li> crypto support %s" % [CM[x] for x in p[4]])
+            el.append("<tr><td>Crypto support %s</td></tr>" % [CM[x] for x in p[4]])
     if len(p) == 6:
         if p[5] == '+':
-            el.append("<li> extra tests")
-    el.append("</ul></p>")
+            el.append("<tr><td>Extra tests</td></tr>")
+    el.append("</table>")
 
     return "\n".join(el)
 
