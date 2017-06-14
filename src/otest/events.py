@@ -378,23 +378,23 @@ def layout(start, event):
 
 
 def row(start, event):
-    if event.typ == 'Phase':
-        _row = ['<tr class="phase"><td class="left">{}</td>'.format(
+    if event.typ == EV_OPERATION:
+        _row = ['<tr class="info"><td>{}</td>'.format(
             round(event.timestamp - start, 3))]
     else:
-        _row = ['<tr><td class="left">{}</td>'.format(
+        _row = ['<tr><td>{}</td>'.format(
             round(event.timestamp - start, 3))]
 
     try:
         p = TO_STR[event.typ](event)
         _row.append(
-            '<td class="mid">{}</td><td><pre><code>{}</code></pre></td>'.format(
+            '<td>{}</td><td><pre><code>{}</pre></code></td>'.format(
                 p[0],' '.join(p[1:])))
     except KeyError:
-        _row.append('<td class="mid">{}</td>'.format(event.typ))
+        _row.append('<td style="max-width: 500px; word-wrap: break-word;">{}</td>'.format(event.typ))
         if isinstance(event.data, Base):
-            _row.append('<td>{}</td>'.format(event.data.to_str()))
+            _row.append('<td style="max-width: 500px; word-wrap: break-word;">{}</td>'.format(event.data.to_str()))
         else:
-            _row.append('<td>{}</td>'.format(str(event.data)))
+            _row.append('<td style="max-width: 500px; word-wrap: break-word;">{}</td>'.format(str(event.data)))
     _row.append("</tr>")
     return "".join(_row)

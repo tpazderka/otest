@@ -10,22 +10,20 @@ def trace_output(events):
     """
 
     """
-    element = ["<h3>Trace output</h3>", '<div class="trace"><table>']
+    element = ['<table class="table table-bordered table-condensed">']
     start = 0
     for event in events:
         if not start:
             start = event.timestamp
         # element.append(layout(start, event))
         element.append(row(start, event))
-    element.append("</table></div>")
+    element.append("</table>")
     return "\n".join(element)
 
 
 def profile_output(pinfo, version=''):
-    element = ['<div class="profile">']
-    if version:
-        element.append("<em>%s:</em> %s<br>" % ('Test tool version', version))
+    element = ['<table class="table table-condensed">']
     for key, val in pinfo.items():
-        element.append("<em>%s:</em> %s<br>" % (key, val))
-    element.append('</div>')
+        element.append("<tr><th>%s</th><td>%s</td></tr>" % (key, val))
+    element.append('</table>')
     return "\n".join(element)
