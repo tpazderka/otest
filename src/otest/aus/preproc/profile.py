@@ -7,10 +7,10 @@ PMAPL.sort()
 L2I = {"discovery": 1, "registration": 2}
 LONG_NAMES = {"none": "none", "sig": "signing", "enc": "encryption"}
 
-RADIO = '<input type="radio" name="{}" value="{}">{}<br>'
-RADIO_C = '<input type="radio" name="{}" value="{}" checked>{}<br>'
-CHECK = '<input type="checkbox" name="{}">{}<br>'
-CHECK_C = '<input type="checkbox" name="{}" checked>{}<br>'
+RADIO = '<div class="radio"><label><input type="radio" name="{}" value="{}">{}</label></div>'
+RADIO_C = '<div class="radio"><label><input type="radio" name="{}" value="{}" checked>{}</label></div>'
+CHECK = '<div class="checkbox"><label><input type="checkbox" name="{}">{}</label></div>'
+CHECK_C = '<div class="checkbox"><label><input type="checkbox" name="{}" checked>{}</label></div>'
 
 def profile_form(prof):
     p = prof.split(".")

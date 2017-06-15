@@ -63,6 +63,7 @@ class WebIh(InfoHandling):
     def profile_edit(self):
         _msg = self.pre_html["profile.html"].format(
             profile_form=profile_form(self.session.profile),
+            version=self.session.tool_version,
             base=self.base_url)
         return _msg
 
@@ -103,6 +104,7 @@ class WebIh(InfoHandling):
                 result=represent_result(_events).replace("\n", "<br>\n"),
                 assertions=do_assertions(_events),
                 base=self.base_url,
+                version=self.session.tool_version
             )
             return _msg
 
@@ -144,7 +146,9 @@ class WebIh(InfoHandling):
 
         item.sort()
         _msg = self.pre_html['logs.html'].format(
-            display_log=display_log(logs=item, base=self.base_url, **argv))
+            display_log=display_log(logs=item, base=self.base_url, **argv),
+            version=self.session.tool_version
+        )
         return _msg
 
     def display_log(self, root, issuer="", profile="", testid=""):
