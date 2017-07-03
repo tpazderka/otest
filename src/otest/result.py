@@ -53,10 +53,11 @@ def safe_url(url):
     return s
 
 
-def safe_path(eid, *args):
+def safe_path(eid, ext='', *args):
     """
 
     :param eid: Entity (Issuer) ID, a URL
+    :param ext: Log file extension
     :param args: Additional arguments
     :return: A URL and reverse proxy safe path
     """
@@ -68,7 +69,10 @@ def safe_path(eid, *args):
     if not os.path.isdir(path):
         os.makedirs(path)
 
-    return '{}/{}'.format(path, args[-1])
+    fname = '{}/{}'.format(path, args[-1])
+    if ext:
+        fname += '.{}'.format(ext)
+    return fname
 
 
 class Result(object):
@@ -81,10 +85,7 @@ class Result(object):
         self.profile_handler = profile_handler
         self.session = session
         self.cache = {}
-
-    # def result(self, tid):
-    #     _state = eval_state(self.session["conv"].events)
-    #     print("{} {}".format(SIGN[_state], self.session.flows[tid]['desc']))
+        self.logfile_extension = 'txt'
 
     def print_result(self, events):
         return represent_result(events)
@@ -96,12 +97,13 @@ class Result(object):
             _iss = _iss[:-(len(test_id) + 1)]
         if not tag:
             tag = _sess.tag
-        return safe_path(_iss, tag, _sess.profile, test_id)
+        return safe_path(_iss, self.logfile_extension, tag, _sess.profile,
+                         test_id)
 
     def rp_based(self, test_id, tag=''):
         _sess = self.session
         return safe_path(_sess['test_conf']['start_page'],
-                         _sess.profile, test_id)
+                         self.logfile_extension, _sess.profile, test_id)
 
     def write_info(self, tinfo, test_id='', file_name=None, tag=''):
         if not test_id:
