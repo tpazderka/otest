@@ -260,7 +260,10 @@ def get_id_tokens(conv):
     res = []
     # In access token responses
     for inst in get_protocol_response(conv, message.AccessTokenResponse):
-        res.append(inst["id_token"])
+        try:
+            res.append(inst["id_token"])
+        except KeyError:
+            pass
 
     # implicit, id_token in authorization response
     for inst in get_protocol_response(conv, message.AuthorizationResponse):
