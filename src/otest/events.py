@@ -153,6 +153,9 @@ class Event(object):
             return True
         return False
 
+    def what_when(self):
+        return '{}:{}'.format(self.timestamp, self.typ)
+
 
 class Events(object):
     def __init__(self):
@@ -309,6 +312,11 @@ class Events(object):
     def timeline(self):
         start = self.events[0].timestamp
         return [(ev.timestamp - start, ev.typ, ev.data) for ev in self.events]
+
+    def digest(self):
+        res = []
+        for event in self.events:
+            res.append(event.what_when())
 
 
 def funtion_to_str(event):
