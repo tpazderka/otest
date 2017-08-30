@@ -1,5 +1,6 @@
 import inspect
 import json
+import logging
 import sys
 
 from oic.oauth2 import SUCCESSFUL
@@ -15,15 +16,38 @@ from otest.check import Error
 from otest.check import ExpectedError
 from otest.check import get_protocol_response
 from otest.check import WARNING
-from otest.events import EV_RESPONSE
-from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_HTTP_RESPONSE
+from otest.events import EV_PROTOCOL_RESPONSE
+from otest.events import EV_RESPONSE
+from otest.events import NoSuchEvent
 
+logger = logging.getLogger(__name__)
 
 __author__ = 'rolandh'
 
 CONT_JSON = "application/json"
 CONT_JWT = "application/jwt"
+
+
+def _last_response(conv, typ, error):
+    try:
+        return conv.events.last_item(typ)
+    except NoSuchEvent:
+        logger.warning(error)
+        logger.warning('\n'.join(conv.events.digest()))
+        raise
+
+
+def last_http_response(conv):
+    return _last_response(conv, EV_HTTP_RESPONSE, 'No HTTP Response ??')
+
+
+def last_raw_response(conv):
+    return _last_response(conv, EV_RESPONSE, 'No Response ??')
+
+
+def last_protocol_response(conv):
+    return _last_response(conv, EV_PROTOCOL_RESPONSE, 'No parsed Response ??')
 
 
 class MissingRedirect(CriticalError):
@@ -73,10 +97,10 @@ class CheckHTTPResponse(CriticalError):
     msg = "OP error"
 
     def _func(self, conv):
-        _response = conv.events.get_data(EV_HTTP_RESPONSE)[-1]
-
         res = {}
-        if not _response:
+        try:
+            _response = last_http_response(conv)
+        except NoSuchEvent:
             return res
 
         if _response.status_code >= 400:
@@ -115,7 +139,11 @@ class VerifyErrorResponse(ExpectedError):
     def _func(self, conv):
         res = {}
 
-        response = conv.events.last_item(EV_HTTP_RESPONSE)
+        try:
+            response = last_http_response(conv)
+        except NoSuchEvent:
+            return res
+
         if response.status_code == 302:
             _loc = response.headers["location"]
             if "?" in _loc:
@@ -152,9 +180,13 @@ class CheckRedirectErrorResponse(ExpectedError):
     msg = "OP error"
 
     def _func(self, conv):
-        _response = conv.events.last_item(EV_HTTP_RESPONSE)
-
         res = {}
+
+        try:
+            _response = last_http_response(conv)
+        except NoSuchEvent:
+            return res
+
         try:
             _loc = _response.headers["location"]
             if "?" in _loc:
@@ -196,8 +228,13 @@ class VerifyBadRequestResponse(ExpectedError):
     msg = "OP error"
 
     def _func(self, conv):
-        _response = conv.events.last_item(EV_HTTP_RESPONSE)
         res = {}
+
+        try:
+            _response = last_http_response(conv)
+        except NoSuchEvent:
+            return res
+
         if _response.status_code == 400:
             err = ErrorResponse().deserialize(_response.text, "json")
             try:
@@ -241,9 +278,18 @@ class VerifyRandomRequestResponse(ExpectedError):
     msg = "OP error"
 
     def _func(self, conv):
-        _response = conv.events.last_item(EV_HTTP_RESPONSE)
-        _content = conv.events.last_item(EV_RESPONSE)
         res = {}
+
+        try:
+            _response = last_http_response(conv)
+        except NoSuchEvent:
+            return res
+
+        try:
+            _content = last_raw_response(conv)
+        except NoSuchEvent:
+            return res
+
         if _response.status_code == 400:
             err = ErrorResponse().deserialize(_content, "json")
             err.verify()
@@ -269,9 +315,16 @@ class VerifyUnknownClientIdResponse(ExpectedError):
     msg = "OP error"
 
     def _func(self, conv):
-        _response = conv.events.last_item(EV_HTTP_RESPONSE)
-        _content = conv.events.last_item(EV_RESPONSE)
         res = {}
+        try:
+            _response = last_http_response(conv)
+        except NoSuchEvent:
+            return res
+
+        try:
+            _content = last_raw_response(conv)
+        except NoSuchEvent:
+            return res
 
         if _response.status_code == 400:
             err = ErrorResponse().deserialize(_content, "json")
@@ -300,7 +353,10 @@ class VerifyError(Error):
     cid = "verify-error"
 
     def _func(self, conv):
-        response = conv.events.last_item(EV_HTTP_RESPONSE)
+        try:
+            response = last_http_response(conv)
+        except NoSuchEvent:
+            return {}
 
         if response.status_code == 400:
             try:
@@ -351,7 +407,10 @@ class CheckErrorResponse(ExpectedError):
         else:
             return res
 
-        _response = conv.events.last_item(EV_HTTP_RESPONSE)
+        try:
+            _response = last_http_response(conv)
+        except NoSuchEvent:
+            return {}
 
         if _response.status_code >= 400:
             content_type = _response.headers["content-type"]
@@ -385,7 +444,10 @@ class VerifyErrorMessage(ExpectedError):
     msg = "OP error"
 
     def _func(self, conv):
-        inst = conv.events.last_item(EV_PROTOCOL_RESPONSE)
+        try:
+            inst = last_protocol_response(conv)
+        except NoSuchEvent:
+            return {}
 
         try:
             assert isinstance(inst, ErrorResponse)
@@ -415,7 +477,10 @@ class VerifyAuthnResponse(ExpectedError):
     msg = "OP error"
 
     def _func(self, conv):
-        inst = conv.events.last_item(EV_PROTOCOL_RESPONSE)
+        try:
+            inst = last_protocol_response(conv)
+        except NoSuchEvent:
+            return {}
 
         try:
             assert isinstance(inst, AuthorizationResponse)
@@ -435,7 +500,10 @@ class VerifyAuthnOrErrorResponse(ExpectedError):
     msg = "Expected authentication response or error message"
 
     def _func(self, conv):
-        inst = conv.events.last_item(EV_PROTOCOL_RESPONSE)
+        try:
+            inst = last_protocol_response(conv)
+        except NoSuchEvent:
+            return {}
 
         try:
             assert isinstance(inst, AuthorizationResponse)
@@ -479,7 +547,10 @@ class VerifyResponse(ExpectedError):
     """
 
     def _func(self, conv):
-        inst = conv.events.last_item(EV_PROTOCOL_RESPONSE)
+        try:
+            inst = last_protocol_response(conv)
+        except NoSuchEvent:
+            return {}
 
         try:
             _status = self._kwargs["status"]
