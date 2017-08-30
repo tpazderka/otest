@@ -9,7 +9,7 @@ import cherrypy
 from jwkest import as_bytes
 from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import Message
-from otest import Break
+from otest import Break, ConfigurationError
 
 from otest.events import EV_EVENT
 from otest.events import EV_EXCEPTION
@@ -114,6 +114,10 @@ class Operation(object):
         for op, arg in list(self.funcs.items()):
             try:
                 op(self, arg)
+            except ConfigurationError as err:
+                _txt = "Configuration error: {}".format(err)
+                self.conv.events.store(EV_EXCEPTION, _txt)
+                raise cherrypy.HTTPError(message=_txt)
             except Exception as err:
                 _txt = "Can't do {}".format(op)
                 self.conv.events.store(EV_EXCEPTION, _txt)
