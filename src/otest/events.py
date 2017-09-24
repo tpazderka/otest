@@ -317,6 +317,7 @@ class Events(object):
         res = []
         for event in self.events:
             res.append(event.what_when())
+        return res
 
 
 def funtion_to_str(event):
