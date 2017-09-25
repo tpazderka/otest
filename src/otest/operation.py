@@ -192,6 +192,8 @@ class Operation(object):
                 try:
                     assert isinstance(res, ErrorResponse)
                 except AssertionError:
+                    logger.info(
+                        'Expected error not received: {}'.format(res.to_dict()))
                     self.conv.events.store(
                         EV_EVENT, 'Expected error not received')
                 else:
@@ -200,9 +202,13 @@ class Operation(object):
                             EV_EVENT,
                             'Expected error not received: got {}'.format(
                                 res['error']))
+                        logger.info(
+                            'Expected error not received: {}'.format(
+                                res.to_dict()))
                     else:
                         self.conv.events.store(EV_EVENT, "Got expected error")
-
+                        logger.info(
+                            "Got expected error: {}".format(res.to_dict()))
                     try:
                         if self.expect_error['stop']:
                             raise Break('Stop')
@@ -210,10 +216,15 @@ class Operation(object):
                         pass
             else:
                 if isinstance(res, ErrorResponse):
+                    logger.info(
+                        'Unexpected error response: {}'.format(res.to_dict()))
                     self.conv.events.store(EV_EVENT, "Got unexpected error")
                     raise Break('Stop')
 
             if res:
+                if isinstance(res, Message):
+                    logger.info('Response: {}'.format(res.to_dict()))
+
                 if isinstance(res, self.message_cls):
                     self.conv.events.store(EV_PROTOCOL_RESPONSE, res)
                 elif isinstance(res, ErrorResponse):
