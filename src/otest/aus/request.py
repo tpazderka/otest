@@ -147,12 +147,16 @@ class SyncRequest(Request):
                         sformat="json", state=state)
 
             _ent = self.conv.entity
-            if isinstance(resp, AccessTokenResponse) and isinstance(
-                    resp['id_token'], IdToken):
-                pass
+            if isinstance(resp, AccessTokenResponse):
+                if 'id_token' in resp and isinstance(resp['id_token'], IdToken):
+                    pass
+                else:
+                    resp.verify(keyjar=_ent.keyjar, client_id=_ent.client_id,
+                                iss=_ent.provider_info['issuer'])
             else:
                 resp.verify(keyjar=_ent.keyjar, client_id=_ent.client_id,
                             iss=_ent.provider_info['issuer'])
+
         elif r.status_code == 400:
             if r.headers['content-type'] == 'application/json':
                 resp = ErrorResponse().from_json(r.text)
