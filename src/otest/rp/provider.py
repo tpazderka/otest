@@ -13,7 +13,8 @@ from oic.oauth2.message import AccessTokenRequest
 from oic.oauth2.message import ASConfigurationResponse
 from oic.utils.keyio import keyjar_init
 
-from otest.events import EV_PROTOCOL_REQUEST, EV_HTTP_RESPONSE
+from otest.events import EV_PROTOCOL_REQUEST
+from otest.events import EV_HTTP_RESPONSE
 
 __author__ = 'roland'
 
