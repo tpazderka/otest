@@ -28,10 +28,6 @@ __author__ = 'roland'
 logger = logging.getLogger(__name__)
 
 
-class SubjectMismatch(Exception):
-    pass
-
-
 def include(url, test_id):
     p = urlparse(url)
     if p.path[1:].startswith(test_id):

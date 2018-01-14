@@ -6,38 +6,37 @@ from otest.prof_util import to_profile
 TESTS = {
     'C.T.T.T': {'extra': False, 'enc': False, 'webfinger': True,
                 'return_type': 'C', 'sig': False, 'none': False,
-                'register': True, 'discover': True},
+                'register': True, 'discover': True, 'form_post': False},
     'C.T.T.T..+': {'extra': True, 'enc': False, 'webfinger': True,
                    'return_type': 'C', 'sig': False, 'none': False,
-                   'register': True, 'discover': True},
+                   'register': True, 'discover': True, 'form_post': False},
     'C.T.T.T.e.+': {'extra': True, 'enc': True, 'webfinger': True,
                     'return_type': 'C', 'sig': False, 'none': False,
-                    'register': True, 'discover': True},
+                    'register': True, 'discover': True, 'form_post': False},
+    'C.T.T.T...T': {'extra': False, 'enc': False, 'webfinger': True,
+                    'return_type': 'C', 'sig': False, 'none': False,
+                    'register': True, 'discover': True, 'form_post': True},
     'C.T.T.T.ens': {'extra': False, 'enc': True, 'webfinger': True,
                     'return_type': 'C', 'sig': True, 'none': True,
-                    'register': True, 'discover': True},
+                    'register': True, 'discover': True, 'form_post': False},
     'C.T.T.T.es': {'extra': False, 'enc': True, 'webfinger': True,
                    'return_type': 'C', 'sig': True, 'none': False,
-                   'register': True, 'discover': True},
+                   'register': True, 'discover': True, 'form_post': False},
     'C.T.T.T.s': {'extra': False, 'enc': False, 'webfinger': True,
                   'return_type': 'C', 'sig': True, 'none': False,
-                  'register': True, 'discover': True},
+                  'register': True, 'discover': True, 'form_post': False},
     'CIT.F.F.F.s': {'extra': False, 'enc': False, 'webfinger': False,
                     'return_type': 'CIT', 'sig': True, 'none': False,
-                    'register': False, 'discover': False},
+                    'register': False, 'discover': False, 'form_post': False},
     'I.F.T.F': {'extra': False, 'enc': False, 'webfinger': False,
                 'return_type': 'I', 'sig': False, 'none': False,
-                'register': False, 'discover': True},
+                'register': False, 'discover': True, 'form_post': False},
     'I.T.T.T': {'extra': False, 'enc': False, 'webfinger': True,
                 'return_type': 'I', 'sig': False, 'none': False,
-                'register': True, 'discover': True}
+                'register': True, 'discover': True, 'form_post': False}
 }
 
 TKEYS = list(TESTS.keys())
-TKEYS.sort()
-
-
-# print(TKEYS)
 
 
 def test_from_to_code():
@@ -51,14 +50,18 @@ def test_from_to_code():
 def test_map_prof():
     assert map_prof(TKEYS[0], TKEYS[1]) is False
     assert map_prof(TKEYS[2], TKEYS[0])
+    assert map_prof(TKEYS[2], TKEYS[1])
+    assert map_prof(TKEYS[0], TKEYS[3]) is False
+    assert map_prof(TKEYS[3], TKEYS[0])
     assert map_prof(TKEYS[0], TKEYS[2]) is False
-    assert map_prof(TKEYS[3], TKEYS[4])
+    assert map_prof(TKEYS[3], TKEYS[4]) is False
     assert map_prof(TKEYS[4], TKEYS[3]) is False
     assert map_prof(TKEYS[0], TKEYS[8]) is False
     assert map_prof(TKEYS[7], TKEYS[8]) is False
     assert map_prof(TKEYS[8], TKEYS[7]) is False
-    assert map_prof(TKEYS[3], TKEYS[5])
+    assert map_prof(TKEYS[3], TKEYS[5]) is False
     assert map_prof(TKEYS[4], TKEYS[5])
+    assert map_prof(TKEYS[0], TKEYS[2]) is False
 
 
 def test_repr_profile():
@@ -71,10 +74,8 @@ def test_repr_profile():
                   'webfinger': 'webfinger'}
 
     rp = repr_profile(TKEYS[3].split('.'), representation="list")
-    assert rp == ['code', 'webfinger', 'discovery', 'dynamic',
-                  'encrypt+none+sign']
+    assert rp == ['code', 'webfinger', 'discovery', 'dynamic', 'form_post']
 
-    rp = repr_profile(TKEYS[6].split('.'), representation="list")
+    rp = repr_profile(TKEYS[7].split('.'), representation="list")
     assert rp == ['code+id_token+token', 'no-webfinger', 'no-discovery',
                   'static', 'sign']
-

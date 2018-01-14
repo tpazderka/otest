@@ -1,9 +1,18 @@
 from oic.oic import AccessTokenResponse
 from oic.oic import ProviderConfigurationResponse
-from otest.aus.check import VerifyResponse, CheckHTTPResponse, CONT_JSON
-from otest.check import ERROR, CRITICAL
+
+from otest.aus.check import CheckHTTPResponse
+from otest.aus.check import CONT_JSON
+from otest.aus.check import VerifyAuthnOrErrorResponse
+from otest.aus.check import VerifyAuthnResponse
+from otest.aus.check import VerifyErrorMessage
+from otest.aus.check import VerifyResponse
+
+from otest.check import CRITICAL
+from otest.check import ERROR
 from otest.check import OK
-from otest.events import EV_PROTOCOL_RESPONSE, EV_HTTP_RESPONSE
+from otest.events import EV_HTTP_RESPONSE
+from otest.events import EV_PROTOCOL_RESPONSE
 from otest.test_setup import setup_conv
 
 
@@ -119,3 +128,74 @@ def test_check_http_response_4xx():
     res = cr._func(_conv)
     assert res == {'content': '{"error":"foo"}', 'http_status': 400, 'url': ''}
     assert cr._status == CRITICAL
+
+
+def test_authn_response_or_error():
+    """
+    arg={'error': ['request_uri_not_supported']}
+    """
+    _info = setup_conv()
+    conv = _info['conv']
+    chk = VerifyAuthnOrErrorResponse()
+    kwargs = {}
+    chk._kwargs = kwargs
+    res = chk._func(conv)
+    assert True
+
+
+def test_verify_authn_response():
+    """
+    arg=None
+    """
+    _info = setup_conv()
+    conv = _info['conv']
+    chk = VerifyAuthnResponse()
+    kwargs = {}
+    chk._kwargs = kwargs
+    res = chk._func(conv)
+    assert True
+
+
+def test_check_http_response():
+    """
+    arg=None
+    """
+    _info = setup_conv()
+    conv = _info['conv']
+    chk = CheckHTTPResponse()
+    kwargs = {}
+    chk._kwargs = kwargs
+    res = chk._func(conv)
+    assert True
+
+
+def test_verify_error_response():
+    """
+    arg={'error': ['invalid_request', 'invalid_configuration_parameter', 
+         'invalid_redirect_uri']}
+    """
+    _info = setup_conv()
+    conv = _info['conv']
+    chk = VerifyErrorMessage()
+    kwargs = {}
+    chk._kwargs = kwargs
+    res = chk._func(conv)
+    assert True
+
+
+# def test_verify_response():
+#     """
+#     arg={'error': ['access_denied'], 'response_cls': ['ErrorResponse']}
+#     arg={'response_cls': ['AccessTokenResponse', 'AuthorizationResponse']}
+#     arg={'response_cls': ['AuthorizationResponse', 'AccessTokenResponse']}
+#     arg={'status': 2, 'response_cls': ['OpenIDSchema']}
+#     arg={'error': ['access_denied', 'invalid_token'], 'status': 2,
+#          'response_cls': ['ErrorResponse']}
+#     """
+#     _info = setup_conv()
+#     conv = _info['conv']
+#     chk = VerifyResponse()
+#     kwargs = {}
+#     chk._kwargs = kwargs
+#     res = chk._func(conv)
+#     assert True

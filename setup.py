@@ -46,7 +46,7 @@ setup(
         "requests >= 2.0.0",
         'pyYAML',
         'pycryptodomex',
-        'oic >= 0.10.0',
+        'oic >= 0.12.0',
         'pyjwkest >= 1.3.2',
         'future',
         'entropy',

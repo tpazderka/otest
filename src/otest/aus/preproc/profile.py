@@ -1,5 +1,8 @@
 from otest.aus.preproc import PMAP
-from otest.prof_util import CRYPTO, EMAP, EXTRAS
+from otest.prof_util import CRYPTO
+from otest.prof_util import EMAP
+from otest.prof_util import EXTRAS
+from otest.prof_util import FORMPOST
 
 PMAPL = list(PMAP.keys())
 PMAPL.sort()
@@ -11,6 +14,7 @@ RADIO = '<div class="radio"><label><input type="radio" name="{}" value="{}">{}</
 RADIO_C = '<div class="radio"><label><input type="radio" name="{}" value="{}" checked>{}</label></div>'
 CHECK = '<div class="checkbox"><label><input type="checkbox" name="{}">{}</label></div>'
 CHECK_C = '<div class="checkbox"><label><input type="checkbox" name="{}" checked>{}</label></div>'
+
 
 def profile_form(prof):
     p = prof.split(".")
@@ -29,6 +33,14 @@ def profile_form(prof):
             el.append("<li>Dynamic %s" % mode)
         else:
             el.append("<li>Static %s" % mode)
+
+    el.append("</ul><p>Response mode form_post support:<br>")
+    if p[FORMPOST] == "T":
+        el.append(CHECK_C.format('form_post', ''))
+    else:
+        el.append(CHECK.format('form_post', ''))
+    el.append('</p>')
+
     el.append("</ul><p>Cryptographic support:<br>")
     if len(p) > CRYPTO:
         vs = p[CRYPTO]

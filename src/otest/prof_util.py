@@ -11,9 +11,10 @@ DISCOVER = 2
 REGISTER = 3
 CRYPTO = 4
 EXTRAS = 5
+FORMPOST = 6
 
 LABEL = ['return_type', 'webfinger', 'discover', 'register', 'crypto',
-         'extra']
+         'extra', "form_post"]
 
 __author__ = 'roland'
 
@@ -35,8 +36,10 @@ OC = {"T": "discovery", "F": "no-discovery"}
 REG = {"T": "dynamic", "F": "static"}
 CR = {"n": "none", "s": "sign", "e": "encrypt"}
 EX = {"+": "extras"}
+FP = {'T': 'form_post'}
+
 ATTR = ["return_type", "webfinger", "openid-configuration", "registration",
-        "crypto", "extras"]
+        "crypto", "extras", "form_post"]
 
 
 def simplify_return_type(spec):
@@ -82,7 +85,8 @@ def from_profile(code):
              "extra": False,
              "sig": False,
              'enc': False,
-             'none': False}
+             'none': False,
+             'form_post': False}
 
     for x, y in {WEBFINGER: 'webfinger', DISCOVER: 'discover',
               REGISTER: 'register'}.items():
@@ -95,24 +99,42 @@ def from_profile(code):
         for k, v in EMAP.items():
             if k in p[CRYPTO]:
                 _prof[v] = True
-    if len(p) > EXTRAS:
-        if '+' in p[EXTRAS]:
-            _prof['extra'] = True
+
+        if len(p) > EXTRAS:
+            if '+' in p[EXTRAS]:
+                _prof['extra'] = True
+
+            if len(p) > FORMPOST:
+                if 'T' in p[FORMPOST]:
+                    _prof['form_post'] = True
 
     return _prof
 
 
 def to_profile(pdict):
-    code = pdict["return_type"]
+    code = [pdict["return_type"]]
 
     for key in ["webfinger", "discover", "register"]:
         try:
             if pdict[key]:
-                code += ".T"
+                code.append("T")
             else:
-                code += ".F"
+                code.append("F")
         except KeyError:
-            code += ".F"
+            code.append("F")
+
+    # Do the rest backwards
+    tail = []
+    for typ, val in [('form_post', 'T'), ('extra','+')]:
+        try:
+            _fp = pdict[typ]
+        except KeyError:
+            tail.append('')
+        else:
+            if _fp:
+                tail.append(val)
+            else:
+                tail.append('')
 
     ext = ''
     for k in EKEYS:
@@ -122,20 +144,26 @@ def to_profile(pdict):
         except KeyError:
             pass
 
-    try:
-        _xtra = pdict['extra']
-    except KeyError:
-        _xtra = None
-
     if ext:
-        code += '.' + ext
-    elif _xtra:
-        code += '.'
+        tail.append(ext)
+    else:
+        tail.append('')
 
-    if _xtra:
-        code += '.+'
+    i=0
+    while tail[i] == '':
+        i += 1
+        if i == len(tail):
+            break
 
-    return "".join(code)
+    if i == len(tail):
+        pass
+    else:
+        tail = tail[i:]
+        tail.reverse()
+        code.extend(tail)
+
+    return ".".join(code)
+
 
 def repr_profile(profile, representation="list", with_webfinger=True):
     """
@@ -161,15 +189,28 @@ def repr_profile(profile, representation="list", with_webfinger=True):
 
     try:
         i += 1
-        prof.append("%s" % "+".join([CR[x] for x in profile[i]]))
+        _val = "%s" % "+".join([CR[x] for x in profile[i]])
     except (KeyError, IndexError):
         pass
     else:
+        if _val:
+            prof.append(_val)
+        i += 1
         try:
-            i += 1
-            prof.append("%s" % EX[profile[i]])
+            _val = profile[i]
         except (KeyError, IndexError):
             pass
+        else:
+            if _val:
+                prof.append("%s" % EX[_val])
+            i += 1
+            try:
+                _val = profile[i]
+            except (KeyError, IndexError):
+                pass
+            else:
+                if _val:
+                    prof.append("%s" % FP[_val])
 
     if representation == "list":
         return prof
@@ -259,12 +300,13 @@ def _cmp_prof(a, b):
                 if not set(a[CRYPTO]).issuperset(set(b[CRYPTO])):
                     return False
 
-    if len(b) > EXTRAS:
-        if len(a) > EXTRAS:
-            if a[EXTRAS] != b[EXTRAS]:
+    for var in [EXTRAS, FORMPOST]:
+        if len(b) > var:
+            if len(a) > var:
+                if a[var] != b[var]:
+                    return False
+            else:
                 return False
-        else:
-            return False
 
     return True
 
@@ -318,6 +360,10 @@ class ProfileHandler(object):
     @staticmethod
     def register(profile):
         return profile[REGISTER] == "T"
+
+    @staticmethod
+    def form_post(profile):
+        return profile[FORMPOST] == "T"
 
     def to_profile(self, representation="list"):
         return []
@@ -387,6 +433,10 @@ class SimpleProfileHandler(ProfileHandler):
 
     @staticmethod
     def register(profile):
+        return True
+
+    @staticmethod
+    def form_post(profile):
         return True
 
     def get_profile_info(self, test_id=None):
