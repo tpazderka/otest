@@ -79,6 +79,9 @@ def display_profile(spec):
             el.append("<tr><td>Dynamic %s</td></tr>" % mode)
         else:
             el.append("<tr><td>Static %s</td></tr>" % mode)
+    if len(p) > 6:
+        if p[6] == 'T':
+            el.append("<tr><td>Form post tests</td></tr>")
     if len(p) > 4:
         if p[4]:
             el.append("<tr><td>Crypto support %s</td></tr>" % [CM[x] for x in p[4]])
