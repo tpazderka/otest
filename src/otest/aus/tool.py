@@ -149,7 +149,7 @@ class WebTester(Tester):
             old = from_profile(self.sh.profile)
 
             new = from_profile(to_profile(info))
-            for attr in ['enc', 'extra','none', 'return_type', 'sig']:
+            for attr in ['enc', 'extra','none', 'return_type', 'sig', 'form_post']:
                 old[attr] = new[attr]
 
             # Store new configuration

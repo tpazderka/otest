@@ -35,7 +35,7 @@ def profile_form(prof):
             el.append("<li>Static %s" % mode)
 
     el.append("</ul><p>Response mode form_post support:<br>")
-    if p[FORMPOST] == "T":
+    if len(p) > FORMPOST and p[FORMPOST] == "T":
         el.append(CHECK_C.format('form_post', ''))
     else:
         el.append(CHECK.format('form_post', ''))
