@@ -8,7 +8,7 @@ from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import MissingRequiredAttribute
 from oic.oauth2.message import AuthorizationResponse
 
-from otest.check import Check
+from otest.check import Check, Warnings
 from otest.check import CRITICAL
 from otest.check import CriticalError
 from otest.check import ERROR
@@ -124,6 +124,39 @@ class CheckHTTPResponse(CriticalError):
             if isinstance(msg, ErrorResponse):
                 self._message = msg.to_json()
                 self._status = self.status
+
+        return res
+
+
+class CheckHTTPErrorResponse(Warnings):
+    """
+    Checks that an error code is either 400 or 401 which are the only ones
+    accepted by OAuth2/OIDC.
+    """
+    cid = "check-http-error-response"
+    msg = "OP error"
+
+    def _func(self, conv):
+        res = {}
+
+        try:
+            _response = last_http_response(conv)
+        except NoSuchEvent:
+            return res
+
+        if _response.status_code not in [200, 300, 301, 302, 400, 401]:
+            self._status = self.status
+            self._message = self.msg
+            if CONT_JSON in _response.headers["content-type"]:
+                try:
+                    err = ErrorResponse().deserialize(_response.txt, "json")
+                    self._message = err.to_json()
+                except Exception:
+                    res["content"] = _response.text
+            else:
+                res["content"] = _response.text
+            res["url"] = _response.url
+            res["http_status"] = _response.status_code
 
         return res
 
