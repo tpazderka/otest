@@ -245,6 +245,7 @@ def exception_trace(tag, exc, log=None):
         except UnicodeEncodeError:
             print("[%s] Exception: %s" % (
                 tag, exc.message.encode("utf-8", "replace")), file=sys.stderr)
+    return message
 
 
 class ContextFilter(logging.Filter):

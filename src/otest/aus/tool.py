@@ -93,10 +93,10 @@ class Tester(tool.Tester):
                     EV_CONDITION,
                     State(test_id=test_id, status=ERROR, message=err,
                           context=cls.__name__))
-                exception_trace(cls.__name__, err, logger)
+                _trace = exception_trace(cls.__name__, err, logger)
                 self.sh["index"] = index
                 self.store_result(res)
-                return CRITICAL
+                return {'exception_trace': _trace}
             else:
                 rsp = self.handle_response(resp, index)
                 if rsp:
