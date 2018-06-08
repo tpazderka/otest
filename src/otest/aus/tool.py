@@ -110,7 +110,7 @@ class Tester(tool.Tester):
                 if self.conv.flow["assert"]:
                     _ver = Verify(self.check_factory, self.conv)
                     _ver.test_sequence(self.conv.flow["assert"])
-            except KeyError:
+            except (KeyError, Break):
                 self.conv.events.store(EV_CONDITION, State('Done', status=OK))
             except ConditionError:
                 pass
