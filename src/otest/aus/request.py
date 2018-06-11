@@ -11,6 +11,7 @@ from oic.oauth2 import ResponseError
 from oic.oauth2.message import AccessTokenResponse
 from oic.oauth2.message import ErrorResponse
 from oic.oauth2.message import VerificationError
+from oic.oauth2.message import MissingRequiredAttribute
 from oic.oauth2.message import Message
 from oic.oauth2.util import URL_ENCODED
 from oic.oic.message import IdToken
@@ -328,7 +329,7 @@ class AsyncRequest(Request):
             )
         except ResponseError as err:
             return inut.err_response("run_sequence", err)
-        except VerificationError as err:
+        except (VerificationError, MissingRequiredAttribute) as err:
             self.conv.events.store(EV_FAULT, err)
             inut.err_response("run_sequence", err)
             return None
