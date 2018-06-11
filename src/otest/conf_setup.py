@@ -41,6 +41,8 @@ RP_ORDER = [
 
 OP_ORDER = [
     "Response Type & Response Mode",
+    "Response Type",
+    "Response Mode",
     "Discovery",
     "Dynamic Client Registration",
     "redirect_uri",
