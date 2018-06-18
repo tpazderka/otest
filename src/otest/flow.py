@@ -39,7 +39,8 @@ GRPS = [
     'prompt Request Parameter', 'request Request Parameter',
     "Client Authentication", "OAuth behaviors",
     "ID Token", "Key Rotation", "Claims Types", "UserInfo Endpoint",
-    'Misc Request Parameters', 'Key Rotation', 'Access Token'
+    'Misc Request Parameters', 'Key Rotation', 'Access Token',
+    "Response Type", 'Response Mode'
 ]
 
 
