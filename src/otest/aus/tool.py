@@ -7,7 +7,6 @@ from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
 
 from otest import Break, ConditionError
-from otest import CRYPTSUPPORT
 from otest import Done
 from otest import exception_trace
 from otest import tool
@@ -83,6 +82,8 @@ class Tester(tool.Tester):
                             tool_conf=self.kwargs['tool_conf'])
                 self.conv.operation = _oper
                 _oper.setup(self.profiles.PROFILEMAP)
+                if _oper.fail:
+                    break
                 resp = _oper()
             except Break:
                 break
