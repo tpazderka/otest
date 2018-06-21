@@ -9,6 +9,7 @@ from otest.check import OK
 from otest.check import STATUSCODE
 from otest.check import WARNING
 from otest.events import EV_CONDITION
+from otest.events import EV_FAULT
 from otest.events import layout
 
 __author__ = 'roland'
@@ -17,10 +18,14 @@ __author__ = 'roland'
 def assert_summation(events, sid):
     status = OK
     result = []
-    for test_result in events.get_data(EV_CONDITION):
-        result.append('{}'.format(test_result))
-        if test_result.status > status:
-            status = test_result.status
+
+    if events.get_data(EV_FAULT):
+        status = ERROR
+    else:
+        for test_result in events.get_data(EV_CONDITION):
+            result.append('{}'.format(test_result))
+            if test_result.status > status:
+                status = test_result.status
 
     info = {
         "id": sid,
@@ -38,7 +43,7 @@ def completed(events):
     :return: True/False
     """
     for item in events.get_data(EV_CONDITION):
-        if item.test_id == "Done" and item.status == OK:
+        if item.test_id == "Done" and item.status in [OK, ERROR]:
             return True
 
     return False
@@ -46,7 +51,7 @@ def completed(events):
 
 def eval_state(events):
     """
-    The state of the test is the equalt to the worst status encountered
+    The state of the test is equal to the worst status encountered
     :param events: An otest.events.Events instance
     :return: An integer representing a status code
     """
@@ -54,6 +59,9 @@ def eval_state(events):
         res = OK
     else:
         res = INCOMPLETE
+
+    if events.get_data(EV_FAULT):
+        return ERROR  # Can't get worse
 
     for state in events.get_data(EV_CONDITION):
         if state.status > res:
@@ -64,6 +72,9 @@ def eval_state(events):
 
 def get_errors(events):
     res = []
+    for item in events.get_data(EV_FAULT):
+        res.append(item.message)
+
     for item in events.get_data(EV_CONDITION):
         if item.status in [ERROR, CRITICAL]:
             res.append(item.message)
@@ -93,16 +104,27 @@ def represent_result(events):
 
     tag = result_code(events)
 
-    info = []
+    lines = [tag]
+
+    errors = []
+    for state in events.get_data(EV_CONDITION):
+        if state.status == ERROR:
+            if state.message:
+                errors.append(state.message)
+    if errors:
+        lines.append('Errors:')
+        lines.append("\n".join(errors))
+
+    warning = []
     for state in events.get_data(EV_CONDITION):
         if state.status == WARNING:
             if state.message:
-                info.append(state.message)
+                warning.append(state.message)
+    if warning:
+        lines.append('Warnings:')
+        lines.append("\n".join(warning))
 
-    if info:
-        text = "%s\nWarnings:\n%s" % (tag, "\n".join(info))
-    else:
-        text = tag
+    text = "\n".join(lines)
 
     return text
 

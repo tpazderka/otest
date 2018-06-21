@@ -190,9 +190,6 @@ class WebIh(InfoHandling):
         )
         return _msg
 
-    # def opresult(self, conv):
-    #     return self.flow_list()
-    #
     def opresult_fragment(self):
         _msg = self.pre_html['opresult_repost.html']
         return _msg

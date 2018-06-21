@@ -1,31 +1,32 @@
+import copy
 import inspect
 import logging
-import copy
 import sys
 
 from bs4 import BeautifulSoup
-from requests.models import Response
-
 from oic.exception import IssuerMismatch
 from oic.oauth2 import ResponseError
 from oic.oauth2.message import AccessTokenResponse
 from oic.oauth2.message import ErrorResponse
-from oic.oauth2.message import VerificationError
-from oic.oauth2.message import MissingRequiredAttribute
 from oic.oauth2.message import Message
+from oic.oauth2.message import MissingRequiredAttribute
+from oic.oauth2.message import VerificationError
 from oic.oauth2.util import URL_ENCODED
 from oic.oic.message import IdToken
 from oic.utils.http_util import Redirect
+from requests.models import Response
 
 from otest import Break
-from otest import operation
 from otest import Unknown
+from otest import operation
+from otest.check import ERROR
+from otest.check import State
 from otest.events import EV_FAULT
 from otest.events import EV_HTTP_RESPONSE
 from otest.events import EV_PROTOCOL_RESPONSE
-from otest.events import EV_RESPONSE
-from otest.events import EV_REQUEST
 from otest.events import EV_REDIRECT_URL
+from otest.events import EV_REQUEST
+from otest.events import EV_RESPONSE
 from otest.prof_util import RESPONSE
 
 __author__ = 'rolandh'
@@ -182,7 +183,7 @@ class SyncRequest(Request):
                         self.conv.events.store('JWE header',
                                                _id_token.jwe_header)
                     if "kid" not in _id_token.jws_header and not \
-                                    _id_token.jws_header["alg"] == "HS256":
+                            _id_token.jws_header["alg"] == "HS256":
                         keys = self.conv.entity.keyjar.keys_by_alg_and_usage(
                             issuer=_id_token['iss'],
                             alg=_id_token.jws_header["alg"],
@@ -328,6 +329,9 @@ class AsyncRequest(Request):
                 keyjar=_conv.entity.keyjar  # , algs=algs
             )
         except ResponseError as err:
+            _conv.events.store(EV_FAULT, State(_conv.test_id, ERROR,
+                                               message=err,
+                                               context='parse_response'))
             return inut.err_response("run_sequence", err)
         except (VerificationError, MissingRequiredAttribute) as err:
             self.conv.events.store(EV_FAULT, err)
