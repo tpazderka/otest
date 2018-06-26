@@ -107,19 +107,19 @@ def represent_result(events):
     lines = [tag]
 
     errors = []
+    warning = []
     for state in events.get_data(EV_CONDITION):
         if state.status == ERROR:
             if state.message:
-                errors.append(state.message)
+                errors.append('{}'.format(state.message))
+        elif state.status == WARNING:
+            if state.message:
+                warning.append('{}'.format(state.message))
+
     if errors:
         lines.append('Errors:')
         lines.append("\n".join(errors))
 
-    warning = []
-    for state in events.get_data(EV_CONDITION):
-        if state.status == WARNING:
-            if state.message:
-                warning.append(state.message)
     if warning:
         lines.append('Warnings:')
         lines.append("\n".join(warning))
