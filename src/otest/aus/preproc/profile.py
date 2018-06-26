@@ -34,7 +34,10 @@ def profile_form(prof):
         else:
             el.append("<li>Static %s" % mode)
 
-    el.append("</ul><p>Response mode form_post support:<br>")
+    el.append(
+        "</ul><p>Response mode form_post support:</br>")
+    el.append(
+        "<i>(make sure to register https://&lt;host&gt;:&lt;port&gt;/authz_post as (one of) the redirect URI(s) when enabled!)</i></li></br>")
     if len(p) > FORMPOST and p[FORMPOST] == "T":
         el.append(CHECK_C.format('form_post', ''))
     else:
@@ -58,8 +61,8 @@ def profile_form(prof):
         '</ul><p>Check this if you want extra tests (not needed for any '
         'certification profiles): ')
     if len(p) > EXTRAS and p[EXTRAS] == "+":
-        el.append(CHECK_C.format('extra',''))
+        el.append(CHECK_C.format('extra', ''))
     else:
-        el.append(CHECK.format('extra',''))
+        el.append(CHECK.format('extra', ''))
     el.append('</p>')
     return "\n".join(el)
