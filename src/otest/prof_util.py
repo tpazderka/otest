@@ -83,13 +83,13 @@ def from_profile(code):
 
     _prof = {"return_type": p[RESPONSE],
              "extra": False,
-             "sig": False,
+             "sig": True,
              'enc': False,
              'none': False,
              'form_post': False}
 
     for x, y in {WEBFINGER: 'webfinger', DISCOVER: 'discover',
-              REGISTER: 'register'}.items():
+                 REGISTER: 'register'}.items():
         try:
             _prof[y] = (p[x] == 'T')
         except (KeyError, IndexError):
@@ -125,7 +125,7 @@ def to_profile(pdict):
 
     # Do the rest backwards
     tail = []
-    for typ, val in [('form_post', 'T'), ('extra','+')]:
+    for typ, val in [('form_post', 'T'), ('extra', '+')]:
         try:
             _fp = pdict[typ]
         except KeyError:
@@ -149,7 +149,7 @@ def to_profile(pdict):
     else:
         tail.append('')
 
-    i=0
+    i = 0
     while tail[i] == '':
         i += 1
         if i == len(tail):
