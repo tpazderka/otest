@@ -38,6 +38,8 @@ EV_RESPONSE_ARGS = 'response args'
 EV_RUN = 'run'
 EV_SEND = 'send'
 EV_URL = 'url'
+EV_JWS_HEADER = 'JWS header'
+EV_JWE_HEADER = 'JWE header'
 
 
 class NoSuchEvent(Exception):
@@ -170,7 +172,7 @@ class Events(object):
             data = HTTPResponse(data)
 
         self.events.append(
-            Event(index, typ, data, ref, sub, sender, direction, **kwargs))
+            Event(int(index), typ, data, ref, sub, sender, direction, **kwargs))
         return index
 
     def by_index(self, index):

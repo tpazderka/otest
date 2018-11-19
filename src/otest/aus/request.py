@@ -23,6 +23,8 @@ from otest.check import ERROR
 from otest.check import State
 from otest.events import EV_FAULT
 from otest.events import EV_HTTP_RESPONSE
+from otest.events import EV_JWE_HEADER
+from otest.events import EV_JWS_HEADER
 from otest.events import EV_PROTOCOL_RESPONSE
 from otest.events import EV_REDIRECT_URL
 from otest.events import EV_REQUEST
@@ -345,11 +347,31 @@ class AsyncRequest(Request):
         _conv.events.store(EV_PROTOCOL_RESPONSE, response, ref=ev_index,
                            sender=self.__class__.__name__)
 
+        display_jwx_headers(response, _conv)
+
         if self.expect_error:
             self.expected_error_response(response)
         else:
             if isinstance(response, ErrorResponse):
                 raise Break("Unexpected error response")
+
+
+def display_jwx_headers(atr, conv):
+    try:
+        _jws_header = atr["id_token"].jws_header
+    except (KeyError, AttributeError):
+        pass
+    else:
+        if _jws_header:
+            conv.events.store(EV_JWS_HEADER, "{}".format(_jws_header))
+
+    try:
+        _jwe_header = atr['id_token'].jwe_header
+    except KeyError:
+        pass
+    else:
+        if _jwe_header:
+            conv.events.store(EV_JWE_HEADER, "{}".format(_jwe_header))
 
 
 def same_issuer(issuer_A, issuer_B):

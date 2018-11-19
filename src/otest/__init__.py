@@ -21,7 +21,7 @@ from oic.oauth2 import HttpError
 from otest.events import EV_END
 
 __author__ = 'roland'
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2018 Roland Hedberg'
 
@@ -270,7 +270,7 @@ def resp2json(resp):
     return {'message': resp.message, 'status': resp.status,
             'headers': resp.headers}
 
-from otest import END_TAG
+
 from otest.operation import Operation
 
 
