@@ -356,9 +356,9 @@ class AsyncRequest(Request):
                 raise Break("Unexpected error response")
 
 
-def display_jwx_headers(atr, conv):
+def display_jwx_headers(message, conv):
     try:
-        _jws_header = atr["id_token"].jws_header
+        _jws_header = message.jws_header
     except (KeyError, AttributeError):
         pass
     else:
@@ -366,7 +366,7 @@ def display_jwx_headers(atr, conv):
             conv.events.store(EV_JWS_HEADER, "{}".format(_jws_header))
 
     try:
-        _jwe_header = atr['id_token'].jwe_header
+        _jwe_header = message.jwe_header
     except KeyError:
         pass
     else:
