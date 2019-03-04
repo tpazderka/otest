@@ -61,6 +61,10 @@ OP_ORDER = [
     "Misc Request Parameters",
     "OAuth behaviors",
     "Key Rotation",
+    "End Session",
+    "Session Management",
+    "Back Channel Logout - RP Initiated",
+    "Front Channel Logout - RP Initiated"
 ]
 
 

@@ -16,7 +16,7 @@ from otest.check import OK
 from otest.check import State
 from otest.events import EV_CONDITION, EV_OPERATION
 from otest.events import EV_REDIRECT_URL
-from otest.prof_util import to_profile, from_profile, compress_profile
+from otest.prof_util import compress_profile, from_profile, to_profile
 from otest.result import Result
 from otest.result import safe_path
 from otest.verify import Verify
@@ -150,7 +150,7 @@ class WebTester(Tester):
             old = from_profile(self.sh.profile)
 
             new = from_profile(to_profile(info))
-            for attr in ['enc', 'extra','none', 'return_type', 'sig', 'form_post']:
+            for attr in ['enc', 'extra', 'none', 'return_type', 'sig', 'form_post']:
                 old[attr] = new[attr]
 
             # Store new configuration
@@ -218,7 +218,7 @@ class WebTester(Tester):
         else:
             cls = item
 
-        logger.info("<--<-- {} --- {}".format(index, cls))
+        logger.info("<--<-- {} --- {}".format(index, cls.__name__))
         resp = self.conv.operation.parse_response(self.sh["testid"],
                                                   self.inut,
                                                   self.message_factory,
@@ -228,4 +228,34 @@ class WebTester(Tester):
 
         index += 1
 
+        return self.run_flow(self.sh["testid"], index=index)
+
+    def handle_request(self, request=None, request_args=None):
+        index = self.sh["index"]
+        item = self.sh["sequence"][index]
+        self.conv = self.sh["conv"]
+
+        if isinstance(item, tuple):
+            cls, funcs = item
+        else:
+            cls = item
+            funcs = {}
+
+        _line = "<--<-- {} --- {} -->-->".format(index, cls.__name__)
+        logger.info(_line)
+        self.conv.events.store(EV_OPERATION, _line)
+        _oper = cls(conv=self.conv, inut=self.inut, sh=self.sh,
+                    profile=self.sh.profile, test_id=self.sh["testid"],
+                    conf=self.conv.conf, funcs=funcs,
+                    check_factory=self.check_factory, cache=self.cache,
+                    tool_conf=self.kwargs['tool_conf'])
+        self.conv.operation = _oper
+        resp = self.conv.operation.handle_request(self.message_factory,
+                                                  request=request,
+                                                  request_args=request_args)
+
+        if resp:
+            return resp
+
+        index += 1
         return self.run_flow(self.sh["testid"], index=index)
