@@ -40,7 +40,9 @@ EV_SEND = 'send'
 EV_URL = 'url'
 EV_JWS_HEADER = 'JWS header'
 EV_JWE_HEADER = 'JWE header'
-
+EV_ENDPOINT = 'endpoint'
+EV_OBJ = 'object'
+EV_OBJ_ARGS = 'object args'
 
 class NoSuchEvent(Exception):
     pass
