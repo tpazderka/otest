@@ -64,7 +64,8 @@ OP_ORDER = [
     "End Session",
     "Session Management",
     "Back Channel Logout - RP Initiated",
-    "Front Channel Logout - RP Initiated"
+    "Front Channel Logout - RP Initiated",
+    "Session management - RP Initiated Logout"
 ]
 
 

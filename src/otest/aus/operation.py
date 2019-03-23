@@ -3,23 +3,19 @@ import inspect
 import json
 import logging
 import os
-import time
 import sys
+import time
 
 from Cryptodome.PublicKey import RSA
 from future.backports.urllib.parse import urlparse
-
 from jwkest.jwk import RSAKey
 from oic.oauth2.message import Message
-
 from oic.utils.keyio import KeyBundle
-from oic.utils.keyio import ec_init
 from oic.utils.keyio import dump_jwks
-
+from oic.utils.keyio import ec_init
 from otest import RequirementsNotMet
 from otest import Unknown
 from otest import operation
-
 from otest.aus.request import SyncGetRequest
 from otest.operation import request_with_client_http_session
 
