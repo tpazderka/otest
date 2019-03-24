@@ -105,6 +105,8 @@ class Tester(tool.Tester):
                     return self.inut.respond(rsp)
 
             index += 1
+            if index == len(self.conv.sequence):
+                break
 
         if isinstance(_oper, Done):
             try:

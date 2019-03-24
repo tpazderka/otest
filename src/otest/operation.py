@@ -313,6 +313,24 @@ class VerifyConfiguration(Operation):
             raise Break(self.unsupported)
 
 
+class SessionManagement(Operation):
+    pre_html = "session_iframe.html"
+
+    def __call__(self, *args, **kwargs):
+        _msg = self.inut.pre_html[self.pre_html]
+        # Need to replace client_id, session_state, issuer and
+        # session_change_url
+        client_id = self.conv.entity.client_id
+        _msg = _msg.replace('{client_id}', client_id)
+        session_state = ''
+        _msg = _msg.replace('{session_state}', session_state)
+        issuer = self.conv.entity.provider_info['issuer']
+        _msg = _msg.replace('{issuer}', issuer)
+        session_change_url = ''
+        _msg = _msg.replace('{session_change_url}', session_change_url)
+        return as_bytes(_msg)
+
+
 def factory(name):
     for fname, obj in inspect.getmembers(sys.modules[__name__]):
         if inspect.isclass(obj):
