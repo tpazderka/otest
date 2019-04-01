@@ -1,7 +1,5 @@
 import datetime
-
 import psutil
-
 
 def find_test_instance(iss, tag):
     match = {"-i": iss, "-t": tag}

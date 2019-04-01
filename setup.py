@@ -51,7 +51,8 @@ setup(
         'future',
         'entropy',
         'cherrypy',
-        'robobrowser'
+        'robobrowser',
+        'psutil'
     ],
     zip_safe=False,
     scripts=['script/testtool.py', 'script/make_keys.py']
