@@ -23,7 +23,7 @@ from otest.events import EV_END
 __author__ = 'roland'
 __version__ = '0.7.4'
 __license__ = 'Apache 2.0'
-__copyright__ = 'Copyright 2018 Roland Hedberg'
+__copyright__ = 'Copyright 2019 Roland Hedberg'
 
 
 LOCAL_PATH = "export/"
