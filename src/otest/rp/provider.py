@@ -8,7 +8,7 @@ from jwkest.jwk import RSAKey
 from jwkest.jwk import ECKey
 from jwkest.jwk import SYMKey
 from oic.extension import provider
-from oic.extension.client import RegistrationRequest
+from oic.extension.message import RegistrationRequest
 from oic.oauth2.message import AccessTokenRequest
 from oic.oauth2.message import ASConfigurationResponse
 from oic.utils.keyio import keyjar_init
