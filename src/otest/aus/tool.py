@@ -1,12 +1,13 @@
 import logging
 # from urllib.parse import parse_qs
-from urllib.parse import quote_plus
 
 import cherrypy
+from future.backports.urllib.parse import quote_plus
 from oic.utils.http_util import Redirect
 from oic.utils.http_util import Response
 
-from otest import Break, ConditionError
+from otest import Break
+from otest import ConditionError
 from otest import Done
 from otest import exception_trace
 from otest import tool
@@ -14,9 +15,12 @@ from otest.check import CRITICAL
 from otest.check import ERROR
 from otest.check import OK
 from otest.check import State
-from otest.events import EV_CONDITION, EV_OPERATION
+from otest.events import EV_CONDITION
+from otest.events import EV_OPERATION
 from otest.events import EV_REDIRECT_URL
-from otest.prof_util import compress_profile, from_profile, to_profile
+from otest.prof_util import compress_profile
+from otest.prof_util import from_profile
+from otest.prof_util import to_profile
 from otest.result import Result
 from otest.result import safe_path
 from otest.verify import Verify
@@ -24,6 +28,10 @@ from otest.verify import Verify
 __author__ = 'roland'
 
 logger = logging.getLogger(__name__)
+
+
+class OutOfSync(Exception):
+    pass
 
 
 class Tester(tool.Tester):
@@ -234,7 +242,11 @@ class WebTester(Tester):
 
     def handle_request(self, request=None, request_args=None):
         index = self.sh["index"]
-        item = self.sh["sequence"][index]
+        try:
+            item = self.sh["sequence"][index]
+        except IndexError:  # things have gotten slightly out of hand
+            return True
+
         self.conv = self.sh["conv"]
 
         if isinstance(item, tuple):
@@ -242,6 +254,9 @@ class WebTester(Tester):
         else:
             cls = item
             funcs = {}
+
+        if isinstance(item, Done): # I'm completely out of wack
+            raise OutOfSync()
 
         _line = "<--<-- {} --- {} -->-->".format(index, cls.__name__)
         logger.info(_line)
