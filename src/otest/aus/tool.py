@@ -240,7 +240,7 @@ class WebTester(Tester):
 
         return self.run_flow(self.sh["testid"], index=index)
 
-    def handle_request(self, request=None, request_args=None):
+    def handle_request(self, request=None, request_args=None, **kwargs):
         index = self.sh["index"]
         try:
             item = self.sh["sequence"][index]

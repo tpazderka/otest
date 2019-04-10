@@ -198,7 +198,7 @@ class WebTester(tool.Tester):
             exception_trace("display_test_list", err)
             return self.inut.err_response("session_setup", err)
 
-    def handle_request(self, req, path=''):
+    def handle_request(self, req, path='', **kwargs):
         logging.debug('Raw request: {}'.format(req))
         if req:
             self.conv.events.store(EV_REQUEST, req)
@@ -266,7 +266,7 @@ class WebTester(tool.Tester):
                 ret = Response('Client need to reregister')
                 return ret
 
-        self.handle_request(req, path)
+        self.handle_request(req, path=path)
         self.store_result()
 
         self.conv.index += 1

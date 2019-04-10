@@ -120,7 +120,7 @@ class ConfigurationResponse(Response):
             del kwargs['op_type']
         self.msg_args = kwargs
 
-    def handle_request(self, *args):
+    def handle_request(self, *args, **kwargs):
         return None
 
     def construct_message(self):

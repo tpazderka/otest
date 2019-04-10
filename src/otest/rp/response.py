@@ -28,7 +28,7 @@ class Response(Operation):
     def construct_message(self):
         return {}
 
-    def handle_request(self, *args):
+    def handle_request(self, *args, **kwargs):
         raise NotImplemented
 
     def __call__(self, *args, **kwargs):

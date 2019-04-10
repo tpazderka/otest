@@ -239,7 +239,7 @@ class Operation(object):
     def handle_response(self, *args):
         raise NotImplemented
 
-    def handle_request(self, *args):
+    def handle_request(self, *args, **kwargs):
         raise NotImplemented
 
 
