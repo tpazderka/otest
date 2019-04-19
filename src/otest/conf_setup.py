@@ -63,6 +63,7 @@ OP_ORDER = [
     "Key Rotation",
     "End Session",
     "Session Management",
+    "RP Initiated Logout",
     "Back Channel Logout - RP Initiated",
     "Front Channel Logout - RP Initiated",
     "Session management - RP Initiated Logout"
