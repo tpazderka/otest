@@ -1,5 +1,5 @@
-from oic.oic import AccessTokenResponse
-from oic.oic import ProviderConfigurationResponse
+from oic.oic.message import AccessTokenResponse
+from oic.oic.message import ProviderConfigurationResponse
 
 from otest.aus.check import CheckHTTPResponse
 from otest.aus.check import CONT_JSON
