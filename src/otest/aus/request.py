@@ -86,11 +86,10 @@ class Request(Operation):
 
 
 class SyncRequest(Request):
-    request_cls = None
+    endpoint = None
     method = ""
     module = ""
     content_type = URL_ENCODED
-    response_cls = None
     response_where = "url"
     response_type = "urlencoded"
     accept = None
@@ -106,12 +105,12 @@ class SyncRequest(Request):
 
         self.conv.req = self
         self.tests = copy.deepcopy(self._tests)
-        if self.request_cls:
-            self.request = self.conv.msg_factory(self.request_cls)
+        if self.endpoint:
+            self.request = self.conv.msg_factory.get_request_type(self.endpoint)
         else:
             self.request = Message
-        if self.response_cls:
-            self.response = self.conv.msg_factory(self.response_cls)
+        if self.endpoint:
+            self.response = self.conv.msg_factory.get_response_type(self.endpoint)
         else:
             self.response = Message
 
@@ -236,11 +235,10 @@ class SyncRequest(Request):
 
 
 class AsyncRequest(Request):
-    request_cls = None
+    endpoint = None
     method = ""
     module = ""
     content_type = URL_ENCODED
-    response_cls = ""
     response_where = "url"  # if code otherwise 'body'
     response_type = "urlencoded"
     accept = None
@@ -255,8 +253,8 @@ class AsyncRequest(Request):
         self.conv.req = self
         self.tests = copy.deepcopy(self._tests)
         self.csi = None
-        self.request = self.conv.msg_factory(self.request_cls)
-        self.response = self.conv.msg_factory(self.response_cls)
+        self.request = self.conv.msg_factory.get_request_type(self.endpoint)
+        self.response = self.conv.msg_factory.get_response_type(self.endpoint)
 
     def run(self):
         _client = self.conv.entity
@@ -287,7 +285,7 @@ class AsyncRequest(Request):
         except KeyError:
             response_mode = None
 
-        if self.request_cls == "AuthorizationRequest":
+        if self.endpoint == "authorization_endpoint":
             try:
                 _rt = self.csi["response_type"]
             except KeyError:
@@ -322,7 +320,7 @@ class AsyncRequest(Request):
         ev_index = _conv.events.store(EV_RESPONSE, info,
                                       sender=self.__class__.__name__)
 
-        resp_cls = message_factory(self.response_cls)
+        resp_cls = message_factory.get_response_type(self.endpoint)
         #  algs = _conv.entity.sign_enc_algs("id_token")
         try:
             response = _conv.entity.parse_response(

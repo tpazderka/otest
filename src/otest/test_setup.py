@@ -10,7 +10,7 @@ from otest.events import Events
 from otest.flow import FlowState
 from otest.prof_util import ProfileHandler
 
-from oic.oic.message import factory
+from oic.oic.message import OIDCMessageFactory
 from oic.oic.message import ProviderConfigurationResponse
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 
@@ -39,7 +39,7 @@ def setup_conv():
 
     info = WebIh(session=session_handler, profile_handler=ProfileHandler)
 
-    conv = Conversation([], entity, factory, callback_uris=[])
+    conv = Conversation([], entity, OIDCMessageFactory, callback_uris=[])
     conv.events = Events()
     conv.tool_config = {}
     return {'conv': conv, 'io': info}
